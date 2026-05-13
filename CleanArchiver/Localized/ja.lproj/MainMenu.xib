@@ -31,15 +31,6 @@
                             <menuItem isSeparatorItem="YES" id="143">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="アップデートの確認…" id="308">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="checkForUpdates:" target="306" id="309"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="307">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
                             <menuItem title="Services" id="131">
                                 <menu key="submenu" title="Services" systemMenu="services" id="130"/>
                             </menuItem>
@@ -320,7 +311,6 @@
             </view>
             <point key="canvasLocation" x="139" y="420"/>
         </window>
-        <customObject id="306" userLabel="Updater" customClass="SUUpdater"/>
         <view id="235">
             <rect key="frame" x="0.0" y="0.0" width="125" height="1"/>
             <autoresizingMask key="autoresizingMask"/>

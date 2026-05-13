@@ -1,0 +1,10 @@
+build/
+com.apple.DeveloperTools/
+
+zip/*.o
+zip/flags
+zip/zip
+zip/zipcloak
+zip/zipnote
+zip/zipsplit
+zip/License-zip.txt

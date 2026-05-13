@@ -36,8 +36,6 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B52758EE2351D2E7006B2FAB /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B52758ED2351D2E7006B2FAB /* Images.xcassets */; };
 		B52758FD2351E658006B2FAB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B52758FB2351E657006B2FAB /* MainMenu.xib */; };
-		B527590123520A78006B2FAB /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B527590023520A78006B2FAB /* Sparkle.framework */; };
-		B527590223520ACB006B2FAB /* Sparkle.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = B527590023520A78006B2FAB /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B536BA42109C2BB6003C7479 /* CleanArchiver_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = B536BA41109C2BB6003C7479 /* CleanArchiver_Prefix.pch */; };
 		B536BA51109C2D1C003C7479 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B536BA50109C2D1C003C7479 /* main.m */; };
 		B536BA76109C2D7F003C7479 /* CAController.h in Headers */ = {isa = PBXBuildFile; fileRef = B536BA63109C2D7F003C7479 /* CAController.h */; };
@@ -68,20 +66,6 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		B516A23F109C8CB70039610F /* Copy Files */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				B527590223520ACB006B2FAB /* Sparkle.framework in Copy Files */,
-			);
-			name = "Copy Files";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
@@ -96,7 +80,6 @@
 		B52758F52351D536006B2FAB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B52758FC2351E657006B2FAB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = CleanArchiver/Localized/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		B52758FE2351E661006B2FAB /* ja */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ja; path = CleanArchiver/Localized/ja.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		B527590023520A78006B2FAB /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		B536BA15109C1ED1003C7479 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = CleanArchiver/Info.plist; sourceTree = "<group>"; };
 		B536BA41109C2BB6003C7479 /* CleanArchiver_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CleanArchiver_Prefix.pch; path = CleanArchiver/CleanArchiver_Prefix.pch; sourceTree = "<group>"; };
 		B536BA50109C2D1C003C7479 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = CleanArchiver/main.m; sourceTree = "<group>"; };
@@ -122,7 +105,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
-				B527590123520A78006B2FAB /* Sparkle.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,7 +186,6 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B527590023520A78006B2FAB /* Sparkle.framework */,
 				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
@@ -245,7 +226,6 @@
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
 				B58DD5B607BF466600A6D878 /* AppleScript */,
-				B516A23F109C8CB70039610F /* Copy Files */,
 			);
 			buildRules = (
 			);
@@ -319,7 +299,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd zip\n\n[ -e \"zip\" ] && exit 0\n\nfor arch in ${ARCHS}; do\n  build_dir=../build/${arch}\n  mkdir -p ${build_dir}\n\n  make -f unix/Makefile clean\n  make -f unix/Makefile macosx ARCH=${arch}\n  cp zip ${build_dir}\ndone\n\nlipo -create ../build/*/zip -output zip\ncp LICENSE License-zip.txt\n\necho \"Done\"\nexit 0\n";
+			shellScript = "cd zip\n\n[ -e \"zip\" ] && exit 0\n\nbuilt_products=\"\"\nfor arch in ${ARCHS}; do\n  build_dir=../build/${arch}\n  rm -rf ${build_dir}\n  mkdir -p ${build_dir}\n\n  make -f unix/Makefile clean\n  make -f unix/Makefile macosx ARCH=${arch}\n  cp zip ${build_dir}\n  built_products=\"${built_products} ${build_dir}/zip\"\ndone\n\nlipo -create ${built_products} -output zip\ncp LICENSE License-zip.txt\n\necho \"Done\"\nexit 0\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -391,6 +371,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = YES;
@@ -416,14 +397,13 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "@loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 3.0a8;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = jp.sopht.CleanArchiver;
 				PRODUCT_NAME = CleanArchiver;
 				SECTORDER_FLAGS = "";
-				VALID_ARCHS = x86_64;
 				VERSIONING_SYSTEM = "apple-generic";
 				WARNING_CFLAGS = "";
 				WRAPPER_EXTENSION = app;
@@ -435,6 +415,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -463,9 +444,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				SDKROOT = macosx;
-				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
@@ -473,6 +453,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
@@ -500,14 +481,13 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "@loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 3.0a8;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = jp.sopht.CleanArchiver;
 				PRODUCT_NAME = CleanArchiver;
 				SECTORDER_FLAGS = "";
-				VALID_ARCHS = x86_64;
 				VERSIONING_SYSTEM = "apple-generic";
 				WARNING_CFLAGS = "";
 				WRAPPER_EXTENSION = app;
@@ -519,6 +499,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -549,22 +530,22 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
 		B5FE4AF9109FBBC700E1608F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_NAME = zip;
 			};
 			name = Debug;
@@ -572,10 +553,11 @@
 		B5FE4AFA109FBBC700E1608F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_NAME = zip;
 				ZERO_LINK = NO;
 			};

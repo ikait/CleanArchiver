@@ -47,13 +47,5 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>SUEnableAutomaticChecks</key>
-	<string>true</string>
-	<key>SUFeedURL</key>
-	<string>https://www.sopht.jp/cleanarchiver/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>3SBxMzLI1RDjRfXyrfeERTmFR2FtcaA0q7VTIDELmEw=</string>
-	<key>SUShowReleaseNotes</key>
-	<string>false</string>
 </dict>
 </plist>

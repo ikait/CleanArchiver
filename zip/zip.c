@@ -3990,8 +3990,13 @@ char **argv;            /* command line tokens */
 
     if (from_encoding)
       fenc = from_encoding;
+#ifdef NO_NL_LANGINFO
+    else
+      fenc = "UTF-8";
+#else
     else
       fenc = nl_langinfo(CODESET);
+#endif
 
     if ((iconv_cd = iconv_open(to_encoding, fenc)) != (iconv_t)-1) {
       use_encoding_conversion = 1;
