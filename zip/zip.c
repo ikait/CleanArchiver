@@ -2357,8 +2357,8 @@ char **argv;            /* command line tokens */
       char *c;
       loc = setlocale(LC_CTYPE, NULL);
       /* for UTF-8, should be close to en_US.UTF-8 */
-      for (c = loc; c; c++) {
-        if (c == '.') {
+      for (c = loc; *c; c++) {
+        if (*c == '.') {
           /* loc is what is after '.', maybe UTF-8 */
           loc = c + 1;
           break;
