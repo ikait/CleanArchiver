@@ -91,6 +91,7 @@
 	    internetEnabled:(BOOL)internetEnabled
 	      excludedFiles:(NSArray *)excludedFiles
 	      commandRunner:(id<CACommandRunning>)commandRunner
+	      errorMessage:(NSString **)errorMessage
 {
     NSString *tempPath;
     NSString *device;
@@ -110,28 +111,43 @@
 	@"-srcFolder", source, @"-format", @"UDRW", @"-fs", @"HFS+",
 	@"-ov", tempPath, nil];
     if ([commandRunner runCommand:@"hdiutil" arguments:args standardInput:nil
-	standardOutput:NULL] != 0)
+	standardOutput:NULL] != 0) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not create temporary disk image.";
 	goto finish;
+    }
 
     attachOutput = nil;
     args = [NSMutableArray arrayWithObjects:@"attach", @"-noverify", tempPath, nil];
     if ([commandRunner runCommand:@"hdiutil" arguments:args standardInput:nil
-	standardOutput:&attachOutput] != 0)
+	standardOutput:&attachOutput] != 0) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not attach temporary disk image.";
 	goto finish;
+    }
 
     device = [self deviceFromHdiutilAttachOutput:attachOutput];
     volume = [self volumeFromHdiutilAttachOutput:attachOutput];
-    if (device == nil || volume == nil)
+    if (device == nil || volume == nil) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not find mounted disk image volume.";
 	goto finish;
+    }
 
     if (![self removeExcludedFiles:excludedFiles fromVolume:volume
-	commandRunner:commandRunner])
+	commandRunner:commandRunner]) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not remove excluded files from disk image.";
 	goto finish;
+    }
 
     args = [NSMutableArray arrayWithObjects:@"detach", @"-quiet", device, nil];
     if ([commandRunner runCommand:@"hdiutil" arguments:args standardInput:nil
-	standardOutput:NULL] != 0)
+	standardOutput:NULL] != 0) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not detach temporary disk image.";
 	goto finish;
+    }
     device = nil;
 
     args = [NSMutableArray arrayWithObjects:@"convert", @"-quiet",
@@ -142,8 +158,11 @@
     }
     if ([commandRunner runCommand:@"hdiutil" arguments:args
 	standardInput:([password length] > 0 ? password : nil)
-	standardOutput:NULL] != 0)
+	standardOutput:NULL] != 0) {
+	if (errorMessage != NULL)
+	    *errorMessage = @"Could not convert disk image.";
 	goto finish;
+    }
 
     if (internetEnabled) {
 	args = [NSMutableArray arrayWithObjects:@"internet-enable", @"-quiet",
@@ -154,8 +173,11 @@
 	}
 	if ([commandRunner runCommand:@"hdiutil" arguments:args
 	    standardInput:([password length] > 0 ? password : nil)
-	    standardOutput:NULL] != 0)
+	    standardOutput:NULL] != 0) {
+	    if (errorMessage != NULL)
+		*errorMessage = @"Could not mark disk image as internet-enabled.";
 	    goto finish;
+	}
     }
 
     ok = YES;

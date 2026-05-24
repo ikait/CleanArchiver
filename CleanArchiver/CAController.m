@@ -27,18 +27,12 @@
 //
 
 #import "CAController.h"
+#import "CAArchiveJob.h"
+#import "CAArchiveNameBuilder.h"
+#import "CAArchivePreferences.h"
+#import "CAArchiveQueue.h"
 #import "CAView.h"
 #import "Carc.h"
-
-NSString *AOArchiveIndividually	= @"Archive Individually";
-NSString *AOArchiveType		= @"Archive Type";
-NSString *AOCompressionLevel	= @"Compression Level";
-NSString *AOEncoding		= @"Encoding";
-NSString *AODiscardRsrc		= @"Discard Resource Forks";
-NSString *AOExcludeDSS		= @"Exclude .DS_Store";
-NSString *AOInternetEnabledDMG	= @"Internet-Enabled Disk Image";
-NSString *AOPassword		= @"Password";
-NSString *AOReplaceAutomatically= @"Replace Automatically";
 
 static void
 CARunAlert(NSString *message)
@@ -58,38 +52,22 @@ CARunAlert(NSString *message)
 
 + (void)initialize
 {
-    NSMutableDictionary *defaults;
-    NSUserDefaults *ud;
-
-    defaults = [NSMutableDictionary dictionary];
-    ud = [NSUserDefaults standardUserDefaults];
-
-    [defaults setObject:@"gzip" forKey:AOArchiveType];
-    [defaults setObject:[NSNumber numberWithInt:-1] forKey:AOCompressionLevel];
-    [defaults setObject:@"" forKey:AOEncoding];
-    [defaults setObject:[NSNumber numberWithBool:YES] forKey:AODiscardRsrc];
-    [defaults setObject:[NSNumber numberWithBool:YES] forKey:AOExcludeDSS];
-    [defaults setObject:[NSNumber numberWithBool:NO]
-	forKey:AOReplaceAutomatically];
-    [defaults setObject:[NSNumber numberWithBool:NO]
-	forKey:AOArchiveIndividually];
-    [defaults setObject:[NSNumber numberWithBool:NO]
-	forKey:AOInternetEnabledDMG];
-
-    [ud registerDefaults:defaults];
+    [CAArchivePreferences registerDefaultsInUserDefaults:
+	[NSUserDefaults standardUserDefaults]];
 }
 
 - (void)awakeFromNib
 {
     NSNotificationCenter *nc;
-    NSUserDefaults *ud;
+    CAArchivePreferences *preferences;
 
     nc = [NSNotificationCenter defaultCenter];
-    ud = [NSUserDefaults standardUserDefaults];
+    preferences = [[CAArchivePreferences alloc] initWithUserDefaults:
+	[NSUserDefaults standardUserDefaults]];
 
     [_archiveTypeMenu selectItemWithTitle:
-	[ud objectForKey:AOArchiveType]];
-    switch ([ud integerForKey:AOCompressionLevel]) {
+	[preferences archiveTypeTitle]];
+    switch ([preferences compressionLevel]) {
     case 1:
 	[_compressionLevelMenu selectItemAtIndex:FAST];
 	break;
@@ -101,15 +79,15 @@ CARunAlert(NSString *message)
 	break;
     }
     [self changeArchiveType:self];
-    [_encodingCBox setStringValue:[ud objectForKey:AOEncoding]];
-    [_discardRsrcCheck setState:[ud boolForKey:AODiscardRsrc]];
-    [_excludeDSSCheck setState:[ud boolForKey:AOExcludeDSS]];
+    [_encodingCBox setStringValue:[preferences encoding]];
+    [_discardRsrcCheck setState:[preferences discardResourceForks]];
+    [_excludeDSSCheck setState:[preferences excludeDSStore]];
     [_replaceAutomaticallyCheck setState:
-	[ud boolForKey:AOReplaceAutomatically]];
+	[preferences replaceAutomatically]];
     [_archiveIndividuallyCheck
-	setState:[ud boolForKey:AOArchiveIndividually]];
+	setState:[preferences archiveIndividually]];
     [_internetEnabledDMGCheck
-	setState:[ud boolForKey:AOInternetEnabledDMG]];
+	setState:[preferences internetEnabledDMG]];
 
     [nc addObserver:self selector:@selector(handleFilesDropped:)
 	name:AOFilesDroppedNotification object:nil];
@@ -129,7 +107,7 @@ CARunAlert(NSString *message)
 - (void)applicationWillFinishLaunching:(NSNotification *)n
 {
 
-    _operationQueue = [[NSMutableArray alloc] init];
+    _operationQueue = [[CAArchiveQueue alloc] init];
     _archiveSessionInProgress = NO;
     _archivingCancelled = NO;
     _terminateAfterArchiving = -1;
@@ -176,9 +154,15 @@ CARunAlert(NSString *message)
     }
 
     if (_archivingCancelled == NO && [_mainTask terminationStatus] != 0) {
-	CARunAlert([NSString
-		stringWithFormat:NSLocalizedString(@"Can't create %@.",nil),
-		[_mainTask output]]);
+	if ([[_mainTask lastError] length] > 0)
+	    CARunAlert([NSString stringWithFormat:@"%@\n%@",
+		[NSString stringWithFormat:NSLocalizedString(@"Can't create %@.",nil),
+		    [_mainTask output]],
+		[_mainTask lastError]]);
+	else
+	    CARunAlert([NSString
+		    stringWithFormat:NSLocalizedString(@"Can't create %@.",nil),
+		    [_mainTask output]]);
     }
 
     [[NSWorkspace sharedWorkspace]
@@ -254,12 +238,9 @@ CARunAlert(NSString *message)
 
 - (IBAction)saveAsDefault:(id)sender
 {
-    NSUserDefaults *ud;
+    CAArchivePreferences *preferences;
     int level;
 
-    ud = [NSUserDefaults standardUserDefaults];
-
-    [ud setObject:[_archiveTypeMenu titleOfSelectedItem] forKey:AOArchiveType];
     switch ([_compressionLevelMenu indexOfSelectedItem]) {
     case FAST:
 	    level = 1;
@@ -271,14 +252,18 @@ CARunAlert(NSString *message)
 	    level = -1;
 	    break;
     }
-    [ud setInteger:level forKey:AOCompressionLevel];
-    [ud setObject:[_encodingCBox stringValue] forKey:AOEncoding];
-    [ud setBool:[_discardRsrcCheck state] forKey:AODiscardRsrc];
-    [ud setBool:[_excludeDSSCheck state] forKey:AOExcludeDSS];
-    [ud setBool:[_replaceAutomaticallyCheck state]
-	forKey:AOReplaceAutomatically];
-    [ud setBool:[_archiveIndividuallyCheck state] forKey:AOArchiveIndividually];
-    [ud setBool:[_internetEnabledDMGCheck state] forKey:AOInternetEnabledDMG];
+
+    preferences = [[CAArchivePreferences alloc] initWithUserDefaults:
+	[NSUserDefaults standardUserDefaults]];
+    [preferences setArchiveTypeTitle:[_archiveTypeMenu titleOfSelectedItem]];
+    [preferences setCompressionLevel:level];
+    [preferences setEncoding:[_encodingCBox stringValue]];
+    [preferences setDiscardResourceForks:[_discardRsrcCheck state]];
+    [preferences setExcludeDSStore:[_excludeDSSCheck state]];
+    [preferences setReplaceAutomatically:[_replaceAutomaticallyCheck state]];
+    [preferences setArchiveIndividually:[_archiveIndividuallyCheck state]];
+    [preferences setInternetEnabledDMG:[_internetEnabledDMGCheck state]];
+    [preferences save];
 }
 
 #pragma mark -
@@ -354,41 +339,23 @@ CARunAlert(NSString *message)
 
     [fm fileExistsAtPath:srcname isDirectory:&isDir];
 
-    switch (type) {
-    case DMGT:
-	if (!isDir) {
-	    CARunAlert(NSLocalizedString(
-		@"You can make a disk image only from a folder.", nil));
-	    return nil;
-	}
-	ext = @"dmg";
-	break;
-    case BZIP2T:
-	if ([srcnames count] == 1 && !isDir)
-	    ext = @"bz2";
-	else
-	    ext = @"tar.bz2";
-	break;
-    case GZIPT:
-	if ([srcnames count] == 1 && !isDir)
-	    ext = @"gz";
-	else
-	    ext = @"tar.gz";
-	break;
-    case ZIPT:
-	ext = @"zip";
-	break;
-    default:
-	exit(1);
+    if (type == DMGT && !isDir) {
+	CARunAlert(NSLocalizedString(
+	    @"You can make a disk image only from a folder.", nil));
+	return nil;
     }
 
-    if ([srcnames count] == 1) {
-	dstname = [srcname stringByAppendingPathExtension:ext];
-	if (!ra)
-	    dstname = [self getFileNameWithCandidate:dstname];
-    } else
-	dstname = [self getFileNameWithCandidate:
-	    [@"Archive" stringByAppendingPathExtension:ext]];
+    ext = [CAArchiveNameBuilder archiveExtensionForType:type
+	sourceCount:[srcnames count]
+	sourceIsDirectory:isDir];
+    if (ext == nil)
+	exit(1);
+
+    dstname = [CAArchiveNameBuilder archivePathForSourcePaths:srcnames
+	archiveType:type
+	sourceIsDirectory:isDir];
+    if (!ra)
+	dstname = [self getFileNameWithCandidate:dstname];
 
     return dstname;
 }
@@ -409,16 +376,12 @@ CARunAlert(NSString *message)
 
 - (void)prepare:(NSArray *)srcs
 {
-    NSFileManager *fm;
-    NSMutableDictionary *status;
+    CAArchiveJob *job;
     NSString *dst, *encoding, *password, *src;
     enum archiveTypeMenuIndex type;
     int i, level;
     BOOL ai, e_, ed, ie, ra;
 
-    status = [NSMutableDictionary dictionary];
-
-    fm = [NSFileManager defaultManager];
     type = (enum archiveTypeMenuIndex)[_archiveTypeMenu indexOfSelectedItem];
     src = [srcs objectAtIndex:0];
     ai = [_archiveIndividuallyCheck state];
@@ -450,40 +413,40 @@ CARunAlert(NSString *message)
 	break;
     }
 
-    [status setObject:[NSNumber numberWithInt:type] forKey:AOArchiveType];
-    [status setObject:[NSNumber numberWithInt:level] forKey:AOCompressionLevel];
-    [status setObject:encoding forKey:AOEncoding];
-    [status setObject:[NSNumber numberWithBool:e_] forKey:AODiscardRsrc];
-    [status setObject:[NSNumber numberWithBool:ed] forKey:AOExcludeDSS];
-    [status setObject:password forKey:AOPassword];
-    [status setObject:[NSNumber numberWithBool:ie]
-	forKey:AOInternetEnabledDMG];
-
     if (ai) {
 	for (i = 0; i < [srcs count]; i++) {
 	    src = [srcs objectAtIndex:i];
-
-	    [status setObject:[NSArray arrayWithObject:src]
-		    forKey:@"srcs"];
 
 	    dst = [self getArchiveFileNameWithSourceFileNames:
 		[NSArray arrayWithObject:src]
 		withArchiveType:type withReplaceAutomatically:ra];
 	    if (dst != nil) {
-		[status setObject:dst forKey:@"dst"];
-		[_operationQueue addObject:
-		    [NSDictionary dictionaryWithDictionary:status]];
+		job = [CAArchiveJob jobWithSourcePaths:[NSArray arrayWithObject:src]
+		    destinationPath:dst
+		    archiveType:type
+		    compressionLevel:level
+		    encoding:encoding
+		    password:password
+		    discardResourceForks:e_
+		    excludeDSStore:ed
+		    internetEnabledDMG:ie];
+		[_operationQueue enqueueJob:job];
 	    }
 	}
     } else {
-	[status setObject:srcs forKey:@"srcs"];
-
 	dst = [self getArchiveFileNameWithSourceFileNames:srcs
 		withArchiveType:type withReplaceAutomatically:ra];
 	if (dst != nil) {
-	    [status setObject:dst forKey:@"dst"];
-	    [_operationQueue addObject:
-		[NSDictionary dictionaryWithDictionary:status]];
+	    job = [CAArchiveJob jobWithSourcePaths:srcs
+		destinationPath:dst
+		archiveType:type
+		compressionLevel:level
+		encoding:encoding
+		password:password
+		discardResourceForks:e_
+		excludeDSStore:ed
+		internetEnabledDMG:ie];
+	    [_operationQueue enqueueJob:job];
 	}
     }
 
@@ -499,38 +462,20 @@ CARunAlert(NSString *message)
 
 - (void)cleanArchive
 {
-    NSArray *srcs;
-    NSDictionary *status;
-    NSFileManager *fm;
+    CAArchiveJob *job;
     NSMutableArray *exfiles;
-    NSMutableArray *srcbases;
-    NSString *dst, *encoding, *password;
     enum archiveTypeMenuIndex type;
-    int i, level;
-    BOOL isDir;
 
     exfiles = [NSMutableArray array];
-    fm = [NSFileManager defaultManager];
-
-    status = [_operationQueue objectAtIndex:0];
-    [_operationQueue removeObjectAtIndex:0];
-
-    type = [[status objectForKey:AOArchiveType] intValue];
-    level = [[status objectForKey:AOCompressionLevel] intValue];
-    encoding = [status objectForKey:AOEncoding];
-    password = [status objectForKey:AOPassword];
-
-    dst = [status objectForKey:@"dst"];
-    srcs = [status objectForKey:@"srcs"];
-    [fm fileExistsAtPath:[srcs objectAtIndex:0] isDirectory:&isDir];
+    job = [_operationQueue dequeueJob];
+    type = [job archiveType];
 
     _mainTask = [[Carc alloc] init];
 
     switch (type) {
     case DMGT:
 	[_mainTask setArchiveType:DMG];
-	[_mainTask setInternetEnabledDMG:
-	    [[status objectForKey:AOInternetEnabledDMG] boolValue]];
+	[_mainTask setInternetEnabledDMG:[job internetEnabledDMG]];
 	break;
     case BZIP2T:
 	[_mainTask setArchiveType:BZIP2];
@@ -545,43 +490,32 @@ CARunAlert(NSString *message)
 	exit(1);
     }
 
-    if (level != -1)
-	[_mainTask setCompressionLevel:level];
+    if ([job compressionLevel] != -1)
+	[_mainTask setCompressionLevel:[job compressionLevel]];
 
-    if ([encoding length] > 0)
-	[_mainTask setEncoding:encoding];
+    if ([[job encoding] length] > 0)
+	[_mainTask setEncoding:[job encoding]];
 
-    if (![password isEqualToString:@""])
-	[_mainTask setArchivePassword:password];
+    if (![[job password] isEqualToString:@""])
+	[_mainTask setArchivePassword:[job password]];
 
-    if ([srcs count] == 1)
-	[_mainTask setInput:[[srcs objectAtIndex:0] lastPathComponent]];
-    else {
-	srcbases = [NSMutableArray array];
+    [_mainTask setInput:[job inputBaseNames]];
 
-	for (i = 0; i < [srcs count]; i++)
-	    [srcbases addObject:
-		[[srcs objectAtIndex:i] lastPathComponent]];
-
-	[_mainTask setInput:srcbases];
-    }
-
-    if ([[status objectForKey:AODiscardRsrc] intValue])
+    if ([job discardResourceForks])
 	[_mainTask setDiscardRsrc:YES];
 
-    if ([[status objectForKey:AOExcludeDSS] intValue])
+    if ([job excludeDSStore])
 	[_mainTask setExcludeDSS:YES];
 
-    [_mainTask setCurrentDirectoryPath:
-	[[srcs objectAtIndex:0] stringByDeletingLastPathComponent]];
-    [_mainTask setOutput:dst];
+    [_mainTask setCurrentDirectoryPath:[job workingDirectoryPath]];
+    [_mainTask setOutput:[job destinationPath]];
     [_mainTask setExcludedFiles:exfiles];
     [_mainTask launch];
 
     [_progressMessage setStringValue:
 	[NSString
 	    stringWithFormat:NSLocalizedString(@"Archiving: %@", nil),
-	    [dst lastPathComponent]]];
+	    [[job destinationPath] lastPathComponent]]];
 
 }
 

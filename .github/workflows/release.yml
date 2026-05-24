@@ -18,13 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build app
-        run: |
-          xcodebuild \
-            -project CleanArchiver.xcodeproj \
-            -scheme CleanArchiver \
-            -configuration Release \
-            -derivedDataPath build/DerivedData \
-            clean build
+        run: sh scripts/build_release_app.sh
 
       - name: Verify app
         run: |

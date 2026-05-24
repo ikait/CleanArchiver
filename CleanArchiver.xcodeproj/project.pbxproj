@@ -41,6 +41,17 @@
 		B5FE4B3D109FD2DC00E1608F /* zip in Resources */ = {isa = PBXBuildFile; fileRef = B5FE4B3C109FD2DB00E1608F /* zip */; };
 		B560000123520001006B2FAB /* CACommandLocator.m in Sources */ = {isa = PBXBuildFile; fileRef = B560000323520001006B2FAB /* CACommandLocator.m */; };
 		B560000223520001006B2FAB /* CADMGArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = B560000523520001006B2FAB /* CADMGArchiver.m */; };
+		B560001023520002006B2FAB /* CAArchiveJob.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002123520002006B2FAB /* CAArchiveJob.m */; };
+		B560001123520002006B2FAB /* CAArchiveQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002323520002006B2FAB /* CAArchiveQueue.m */; };
+		B560001223520002006B2FAB /* CAArchiveNameBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002523520002006B2FAB /* CAArchiveNameBuilder.m */; };
+		B560001323520002006B2FAB /* CAArchivePreferences.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002723520002006B2FAB /* CAArchivePreferences.m */; };
+		B560001423520002006B2FAB /* ArchiveModelXCTest.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002823520002006B2FAB /* ArchiveModelXCTest.m */; };
+		B560001523520002006B2FAB /* CAArchiveJob.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002123520002006B2FAB /* CAArchiveJob.m */; };
+		B560001623520002006B2FAB /* CAArchiveQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002323520002006B2FAB /* CAArchiveQueue.m */; };
+		B560001723520002006B2FAB /* CAArchiveNameBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002523520002006B2FAB /* CAArchiveNameBuilder.m */; };
+		B560001823520002006B2FAB /* CAArchivePreferences.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002723520002006B2FAB /* CAArchivePreferences.m */; };
+		B560001923520002006B2FAB /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B560002A23520002006B2FAB /* XCTest.framework */; };
+		B560001A23520002006B2FAB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +96,17 @@
 		B560000423520001006B2FAB /* CACommandLocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CACommandLocator.h; path = CleanArchiver/CACommandLocator.h; sourceTree = "<group>"; };
 		B560000523520001006B2FAB /* CADMGArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CADMGArchiver.m; path = CleanArchiver/CADMGArchiver.m; sourceTree = "<group>"; };
 		B560000623520001006B2FAB /* CADMGArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CADMGArchiver.h; path = CleanArchiver/CADMGArchiver.h; sourceTree = "<group>"; };
+		B560002023520002006B2FAB /* CAArchiveJob.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchiveJob.h; path = CleanArchiver/CAArchiveJob.h; sourceTree = "<group>"; };
+		B560002123520002006B2FAB /* CAArchiveJob.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchiveJob.m; path = CleanArchiver/CAArchiveJob.m; sourceTree = "<group>"; };
+		B560002223520002006B2FAB /* CAArchiveQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchiveQueue.h; path = CleanArchiver/CAArchiveQueue.h; sourceTree = "<group>"; };
+		B560002323520002006B2FAB /* CAArchiveQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchiveQueue.m; path = CleanArchiver/CAArchiveQueue.m; sourceTree = "<group>"; };
+		B560002423520002006B2FAB /* CAArchiveNameBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchiveNameBuilder.h; path = CleanArchiver/CAArchiveNameBuilder.h; sourceTree = "<group>"; };
+		B560002523520002006B2FAB /* CAArchiveNameBuilder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchiveNameBuilder.m; path = CleanArchiver/CAArchiveNameBuilder.m; sourceTree = "<group>"; };
+		B560002623520002006B2FAB /* CAArchivePreferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchivePreferences.h; path = CleanArchiver/CAArchivePreferences.h; sourceTree = "<group>"; };
+		B560002723520002006B2FAB /* CAArchivePreferences.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchivePreferences.m; path = CleanArchiver/CAArchivePreferences.m; sourceTree = "<group>"; };
+		B560002823520002006B2FAB /* ArchiveModelXCTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ArchiveModelXCTest.m; path = Tests/ArchiveModelXCTest.m; sourceTree = "<group>"; };
+		B560002923520002006B2FAB /* CleanArchiverTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CleanArchiverTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B560002A23520002006B2FAB /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = /Applications/Xcode.app/Contents/Developer/Library/Frameworks/XCTest.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,12 +118,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B560003123520002006B2FAB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B560001923520002006B2FAB /* XCTest.framework in Frameworks */,
+				B560001A23520002006B2FAB /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				B560002023520002006B2FAB /* CAArchiveJob.h */,
+				B560002123520002006B2FAB /* CAArchiveJob.m */,
+				B560002423520002006B2FAB /* CAArchiveNameBuilder.h */,
+				B560002523520002006B2FAB /* CAArchiveNameBuilder.m */,
+				B560002623520002006B2FAB /* CAArchivePreferences.h */,
+				B560002723520002006B2FAB /* CAArchivePreferences.m */,
+				B560002223520002006B2FAB /* CAArchiveQueue.h */,
+				B560002323520002006B2FAB /* CAArchiveQueue.m */,
 				B536BA63109C2D7F003C7479 /* CAController.h */,
 				B536BA64109C2D7F003C7479 /* CAController.m */,
 				B536BA65109C2D7F003C7479 /* CAView.h */,
@@ -120,6 +159,7 @@
 			isa = PBXGroup;
 			children = (
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+				B560002A23520002006B2FAB /* XCTest.framework */,
 			);
 			name = "Linked Frameworks";
 			sourceTree = "<group>";
@@ -150,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				B536BA50109C2D1C003C7479 /* main.m */,
+				B560002823520002006B2FAB /* ArchiveModelXCTest.m */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -185,6 +226,7 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* CleanArchiver.app */,
+				B560002923520002006B2FAB /* CleanArchiverTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -225,6 +267,23 @@
 			productReference = 8D1107320486CEB800E47090 /* CleanArchiver.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B560004023520002006B2FAB /* CleanArchiverTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B560005223520002006B2FAB /* Build configuration list for PBXNativeTarget "CleanArchiverTests" */;
+			buildPhases = (
+				B560003223520002006B2FAB /* Resources */,
+				B560003023520002006B2FAB /* Sources */,
+				B560003123520002006B2FAB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CleanArchiverTests;
+			productName = CleanArchiverTests;
+			productReference = B560002923520002006B2FAB /* CleanArchiverTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -248,6 +307,7 @@
 			targets = (
 				8D1107260486CEB800E47090 /* CleanArchiver */,
 				B5FE4AF8109FBBC600E1608F /* zip */,
+				B560004023520002006B2FAB /* CleanArchiverTests */,
 			);
 		};
 /* End PBXProject section */
@@ -267,6 +327,13 @@
 				B52758FD2351E658006B2FAB /* MainMenu.xib in Resources */,
 				B5FE4B3D109FD2DC00E1608F /* zip in Resources */,
 				B58986E310B19AED00C67219 /* License-zip.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B560003223520002006B2FAB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,11 +363,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				B536BA51109C2D1C003C7479 /* main.m in Sources */,
+				B560001023520002006B2FAB /* CAArchiveJob.m in Sources */,
+				B560001123520002006B2FAB /* CAArchiveQueue.m in Sources */,
+				B560001223520002006B2FAB /* CAArchiveNameBuilder.m in Sources */,
+				B560001323520002006B2FAB /* CAArchivePreferences.m in Sources */,
 				B536BA77109C2D7F003C7479 /* CAController.m in Sources */,
 				B536BA79109C2D7F003C7479 /* CAView.m in Sources */,
 				B560000123520001006B2FAB /* CACommandLocator.m in Sources */,
 				B560000223520001006B2FAB /* CADMGArchiver.m in Sources */,
 				B553E422109DC60C009DDDA0 /* Carc.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B560003023520002006B2FAB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B560001423520002006B2FAB /* ArchiveModelXCTest.m in Sources */,
+				B560001523520002006B2FAB /* CAArchiveJob.m in Sources */,
+				B560001623520002006B2FAB /* CAArchiveQueue.m in Sources */,
+				B560001723520002006B2FAB /* CAArchiveNameBuilder.m in Sources */,
+				B560001823520002006B2FAB /* CAArchivePreferences.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,6 +626,44 @@
 			};
 			name = Release;
 		};
+		B560005023520002006B2FAB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				BUNDLE_LOADER = "";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundlePackageType = BNDL;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.sopht.CleanArchiverTests;
+				PRODUCT_NAME = CleanArchiverTests;
+				SDKROOT = macosx;
+				TEST_HOST = "";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Debug;
+		};
+		B560005123520002006B2FAB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				BUNDLE_LOADER = "";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundlePackageType = BNDL;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.sopht.CleanArchiverTests;
+				PRODUCT_NAME = CleanArchiverTests;
+				SDKROOT = macosx;
+				TEST_HOST = "";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -569,6 +690,15 @@
 			buildConfigurations = (
 				B5FE4AF9109FBBC700E1608F /* Debug */,
 				B5FE4AFA109FBBC700E1608F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B560005223520002006B2FAB /* Build configuration list for PBXNativeTarget "CleanArchiverTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B560005023520002006B2FAB /* Debug */,
+				B560005123520002006B2FAB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

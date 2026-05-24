@@ -28,6 +28,19 @@ trap 'hdiutil detach "$ROOT/Volume" >/dev/null 2>&1 || true; rm -rf "$ROOT"' EXI
   CleanArchiver/Carc.m \
   -o "$HARNESS"
 
+/usr/bin/xcrun clang \
+  -fobjc-arc \
+  -fconstant-string-class=NSConstantString \
+  -framework Cocoa \
+  -I CleanArchiver \
+  Tests/ControllerModelTest.m \
+  CleanArchiver/CAArchiveJob.m \
+  CleanArchiver/CAArchiveQueue.m \
+  CleanArchiver/CAArchiveNameBuilder.m \
+  CleanArchiver/CAArchivePreferences.m \
+  -o "$ROOT/ControllerModelTest"
+"$ROOT/ControllerModelTest"
+
 OUTPUT_DIR="$(CLEANARCHIVER_RESOURCE_PATH="$APP/Contents/Resources" "$HARNESS" "$ROOT/run")"
 
 unzip -Z1 "$OUTPUT_DIR/sample.zip" | grep -q 'Sample Folder/hello.txt'

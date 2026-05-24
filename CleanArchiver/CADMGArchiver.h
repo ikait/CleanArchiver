@@ -21,6 +21,7 @@
 		   password:(NSString *)password
 	    internetEnabled:(BOOL)internetEnabled
 	      excludedFiles:(NSArray *)excludedFiles
-	      commandRunner:(id<CACommandRunning>)commandRunner;
+	      commandRunner:(id<CACommandRunning>)commandRunner
+	      errorMessage:(NSString **)errorMessage;
 
 @end

@@ -57,6 +57,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	_usesInternalTask = NO;
 	_internalTaskFinished = YES;
 	_terminateRequested = NO;
+	_lastError = nil;
 
 	nc = [NSNotificationCenter defaultCenter];
 	[nc addObserver:self
@@ -95,6 +96,11 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (NSString *)pathForCommand:(NSString *)command
 {
     return [CACommandLocator pathForCommand:command];
+}
+
+- (void)setLastError:(NSString *)message
+{
+    _lastError = [message copy];
 }
 
 - (NSArray *)inputArguments
@@ -227,8 +233,11 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     NSString *path;
 
     path = [self pathForCommand:command];
-    if (path == nil)
+    if (path == nil) {
+	[self setLastError:[NSString stringWithFormat:@"Command not found: %@",
+	    command]];
 	return NO;
+    }
 
     environment = [CACommandLocator environmentWithOverrides:extraEnvironment];
 
@@ -337,8 +346,11 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	return 1;
 
     path = [self pathForCommand:command];
-    if (path == nil)
+    if (path == nil) {
+	[self setLastError:[NSString stringWithFormat:@"Command not found: %@",
+	    command]];
 	return 1;
+    }
 
     task = [[NSTask alloc] init];
     [task setLaunchPath:path];
@@ -372,8 +384,13 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	}
 	[task waitUntilExit];
 	status = [task terminationStatus];
+	if (status != 0)
+	    [self setLastError:[NSString stringWithFormat:
+		@"Command failed: %@ (%d)", command, status]];
     }
     @catch (NSException *exception) {
+	[self setLastError:[NSString stringWithFormat:
+	    @"Command failed to launch: %@", command]];
 	status = 1;
     }
 
@@ -397,6 +414,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     NSString *src;
     NSMutableArray *excludedFiles;
     BOOL discardResources;
+    NSString *errorMessage;
     int status;
 
     @autoreleasepool {
@@ -404,6 +422,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
     srcs = [self inputArguments];
     src = [srcs objectAtIndex:0];
+    errorMessage = nil;
     discardResources = _discardRsrc;
     excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
     if ([CADMGArchiver createDMGFromSource:src
@@ -411,8 +430,11 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	password:_archivePassword
 	internetEnabled:_internetEnabledDMG
 	excludedFiles:excludedFiles
-	commandRunner:self])
+	commandRunner:self
+	errorMessage:&errorMessage])
 	status = 0;
+    else if ([errorMessage length] > 0)
+	[self setLastError:errorMessage];
 
     [_internalTaskCondition lock];
     _terminationStatus = status;
@@ -524,6 +546,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
     if (_archiveType == DMG) {
 	if (![self configureDMGTask]) {
+	    [self setLastError:@"Invalid disk image input."];
 	    [self finishWithoutLaunching];
 	    return;
 	}
@@ -540,6 +563,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     }
 
     if (![self configureArchiveTask]) {
+	[self setLastError:@"Cannot configure archive task."];
 	[self finishWithoutLaunching];
 	return;
     }
@@ -549,6 +573,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	_launched = YES;
     }
     @catch (NSException *exception) {
+	[self setLastError:@"Cannot launch archive task."];
 	[self finishWithoutLaunching];
     }
 }
@@ -612,11 +637,19 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     return _terminationStatus;
 }
 
+- (NSString *)lastError
+{
+    return _lastError;
+}
+
 - (void)taskDidTerminate:(NSNotification *)n
 {
 
     if ([n object] == _task) {
 	_terminationStatus = [_task terminationStatus];
+	if (_terminationStatus != 0 && [_lastError length] == 0)
+	    [self setLastError:[NSString stringWithFormat:
+		@"Command failed: %@ (%d)", [_task launchPath], _terminationStatus]];
 	[_ownedOutputFileHandle closeFile];
 	_ownedOutputFileHandle = nil;
 	[self postDidFinishNotification];

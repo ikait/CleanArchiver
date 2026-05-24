@@ -29,15 +29,7 @@
 #import <Cocoa/Cocoa.h>
 
 @class Carc;
-
-// Preference identifiers
-extern NSString *AOArchiveIndividually;
-extern NSString *AOArchiveType;
-extern NSString *AODiscardRsrc;
-extern NSString *AOEncoding;
-extern NSString *AOExcludeDSS;
-extern NSString *AOInternetEnabledDMG;
-extern NSString *AOReplaceAutomatically;
+@class CAArchiveQueue;
 
 enum archiveTypeMenuIndex {
     DMGT = 0,
@@ -68,7 +60,7 @@ enum compressionLevelMenuIndex {
     IBOutlet NSTextField *_progressMessage;
     IBOutlet NSWindow *_progressWindow;
 
-    NSMutableArray *_operationQueue;
+    CAArchiveQueue *_operationQueue;
     Carc *_mainTask;
     int _terminateAfterArchiving;
     BOOL _archiveSessionInProgress;

@@ -1,9 +1,13 @@
 CleanArchiver -- simple and nifty archiving utility
 
-Building:
+Building and testing:
 
-CleanArchiver is written for Mac OS X v10.4 Tiger and later, and source files
-can be compiled by the Xcode application.
+CleanArchiver is currently maintained as an Apple silicon macOS app.
+Use Xcode and the scripts in the repository root:
+
+sh scripts/build_release_app.sh
+sh scripts/test_xcode_models.sh
+sh scripts/test_archive_outputs.sh
 
 Homepage:
 

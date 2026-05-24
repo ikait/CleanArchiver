@@ -47,6 +47,7 @@ enum archiveType {
     BOOL _usesInternalTask;
     BOOL _internalTaskFinished;
     BOOL _terminateRequested;
+    NSString *_lastError;
 
     id _input;
     id _output;
@@ -71,6 +72,7 @@ enum archiveType {
 - (void)terminate;
 - (void)waitUntilExit;
 - (int)terminationStatus;
+- (NSString *)lastError;
 - (NSString *)currentDirectoryPath;
 - (void)setCurrentDirectoryPath:(NSString *)p;
 

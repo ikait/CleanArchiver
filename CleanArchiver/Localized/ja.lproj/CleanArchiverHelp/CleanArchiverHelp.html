@@ -20,13 +20,13 @@
     <h2>使い方</h2>
     <p>圧縮したいファイルやフォルダをアプリケーションアイコンやメインウィンドウ内にドラッグ＆ドロップすると、それらを圧縮済みアーカイブとして出力します。</p>
     <p>初期画面では各種オプションの設定が可能です。「初期値として保存」をクリックすると、設定が保存され次回以降の標準の設定とすることができます。</p>
-    <p>解凍はしませんので、OS に付属の StuffIt Expander で行ってください。</p>
+    <p>解凍はしませんので、Finder または別のアーカイブユーティリティを使用してください。</p>
 
     <h2>圧縮オプション</h2>
     <p>CleanArchiver では圧縮形式を始め圧縮時にいくつかのオプションを指定することができます。</p>
 
     <h4>圧縮形式</h4>
-    <p>使用する圧縮形式をgzip, bzip2, zip, Disk Image, StuffIt, StuffIt Xの中から選択できます。ただしStuffItおよびStuffIt Xでアーカイブを作るためには、DropStuffがインストールされている必要があります。</p>
+    <p>使用する圧縮形式をgzip, bzip2, zip, Disk Imageの中から選択できます。zip では同梱の Info-ZIP を使用し、それ以外の形式では macOS のシステムツールを使用します。</p>
 
     <h4>.DS_Store を含めない</h4>
     <p>これが有効になっているとき、出力されるアーカイブの中に.DS_Storeを含めないようにします。</p>
@@ -43,6 +43,9 @@
     <h4>Internet-Enabled Disk Image</h4>
     <p>圧縮形式で Disk Image を選択した場合のみに有効なオプションです。これが有効になっているとき、Internet-Enabled Disk Image を作成します。</p>
 
+    <h2>現在のビルド</h2>
+    <p>現在のビルドは Apple silicon Mac 用です。公開リリースの成果物は ad-hoc 署名で、公証はされていません。</p>
+
     <h2>貢献者</h2>
     <ul>
       <li>Park, Chang-Beom - <a href="http://trip2me.pe.kr/">http://trip2me.pe.kr/</a></li>
@@ -53,9 +56,8 @@
     <p>CleanArchiver には以下のソフトウェアが同梱されています。</p>
     <ul>
       <li>Info-ZIP - <a href="../../License-zip.txt">ライセンス</a></li>
-      <li>p7zip - <a href="../../License-p7zip.txt">ライセンス</a></li>
     </ul>
-    <p>Info-ZIP と p7zip については、CleanArchiver 用に修正されたものを使用しています。</p>
+    <p>Info-ZIP については、CleanArchiver 用に修正されたものを使用しています。</p>
 
     <h2>作者</h2>
     <p>あにゃきち &lt;<a href="mailto:anyakichi@sopht.jp">anyakichi@sopht.jp</a>&gt;<br />
