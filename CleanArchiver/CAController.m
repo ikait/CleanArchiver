@@ -40,6 +40,17 @@ NSString *AOInternetEnabledDMG	= @"Internet-Enabled Disk Image";
 NSString *AOPassword		= @"Password";
 NSString *AOReplaceAutomatically= @"Replace Automatically";
 
+static void
+CARunAlert(NSString *message)
+{
+    NSAlert *alert;
+
+    alert = [[[NSAlert alloc] init] autorelease];
+    [alert setMessageText:message];
+    [alert addButtonWithTitle:@"OK"];
+    [alert runModal];
+}
+
 @implementation CAController
 
 #pragma mark -
@@ -167,11 +178,9 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     }
 
     if (_archivingCancelled == NO && [_mainTask terminationStatus] != 0) {
-	NSRunAlertPanel(@"",
-	    [NSString
+	CARunAlert([NSString
 		stringWithFormat:NSLocalizedString(@"Can't create %@.",nil),
-		[_mainTask output]],
-	    nil, nil, nil);
+		[_mainTask output]]);
     }
 
     [[NSWorkspace sharedWorkspace]
@@ -216,18 +225,18 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     [_mainTask terminate];
 
     if (![dst isEqualToString:@""])
-	[fm removeFileAtPath:dst handler:nil];
+	[fm removeItemAtPath:dst error:nil];
 }
 
 - (IBAction)changeArchiveType:(id)sender
 {
     enum archiveTypeMenuIndex type;
 
-    type = [_archiveTypeMenu indexOfSelectedItem];
+    type = (enum archiveTypeMenuIndex)[_archiveTypeMenu indexOfSelectedItem];
     switch (type) {
     case DMGT:
 	[_discardRsrcCheck setEnabled:NO];
-	[_discardRsrcCheck setState:NSOffState];
+	[_discardRsrcCheck setState:NSControlStateValueOff];
 	[_encodingCBox setEnabled:NO];
 	[_passwordField setEnabled:YES];
 	break;
@@ -282,11 +291,8 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
 
     [_progressIndicator setIndeterminate:YES];
     [_progressIndicator startAnimation:self];
-    [NSApp beginSheet:_progressWindow
-	modalForWindow:[_excludeDSSCheck window]
-	modalDelegate:self
-	didEndSelector:NULL
-	contextInfo:nil];
+    [[_excludeDSSCheck window] beginSheet:_progressWindow
+	completionHandler:nil];
 }
 
 - (void)beginProgressPanelWithText:(NSString *)s
@@ -300,8 +306,8 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
 {
 
     [_progressIndicator stopAnimation:self];
+    [[_progressWindow sheetParent] endSheet:_progressWindow];
     [_progressWindow orderOut:self];
-    [NSApp endSheet:_progressWindow];
 }
 
 #pragma mark -
@@ -312,7 +318,7 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     NSFileManager *fm;
     NSSavePanel *sp;
     NSString *basename, *dirname;
-    int spStatus;
+    NSInteger spStatus;
 
     if (name == nil)
 	return name;
@@ -323,9 +329,12 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     dirname = [name stringByDeletingLastPathComponent];
 
     if ([fm fileExistsAtPath:name] || [dirname isEqualToString:@""] ) {
-	spStatus = [sp runModalForDirectory:dirname file:basename];
-	if (spStatus == NSFileHandlingPanelOKButton)
-	    return [sp filename];
+	[sp setNameFieldStringValue:basename];
+	if (![dirname isEqualToString:@""])
+	    [sp setDirectoryURL:[NSURL fileURLWithPath:dirname]];
+	spStatus = [sp runModal];
+	if (spStatus == NSModalResponseOK)
+	    return [[sp URL] path];
 	else
 	    return nil;
     } else
@@ -350,9 +359,8 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     switch (type) {
     case DMGT:
 	if (!isDir) {
-	    NSRunAlertPanel(@"", NSLocalizedString(
-		@"You can make a disk image only from a folder.", nil),
-		nil, nil, nil);
+	    CARunAlert(NSLocalizedString(
+		@"You can make a disk image only from a folder.", nil));
 	    return nil;
 	}
 	ext = @"dmg";
@@ -413,7 +421,7 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     status = [[NSMutableDictionary alloc] init];
 
     fm = [NSFileManager defaultManager];
-    type = [_archiveTypeMenu indexOfSelectedItem];
+    type = (enum archiveTypeMenuIndex)[_archiveTypeMenu indexOfSelectedItem];
     src = [srcs objectAtIndex:0];
     ai = [_archiveIndividuallyCheck state];
     e_ = [_discardRsrcCheck state];

@@ -28,6 +28,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class Carc;
+
 // Preference identifiers
 extern NSString *AOArchiveIndividually;
 extern NSString *AOArchiveType;
@@ -67,7 +69,7 @@ enum compressionLevelMenuIndex {
     IBOutlet NSWindow *_progressWindow;
 
     NSMutableArray *_operationQueue;
-    id _mainTask;
+    Carc *_mainTask;
     int _terminateAfterArchiving;
     BOOL _archiveSessionInProgress;
     BOOL _archivingCancelled;

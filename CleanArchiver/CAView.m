@@ -52,7 +52,7 @@
 
     if (self = [super initWithFrame:frameRect]) {
 	[self registerForDraggedTypes:
-	    [NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+	    [NSArray arrayWithObjects:NSPasteboardTypeFileURL, nil]];
 	_dragSessionInProgress = NO;
     }
     return self;
@@ -83,7 +83,7 @@
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
 {
-    unsigned mask, ret;
+    NSDragOperation mask, ret;
 
     mask = [sender draggingSourceOperationMask];
     ret = (NSDragOperationGeneric & mask);
@@ -125,13 +125,25 @@
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
     NSArray *filenames;
+    NSArray *urls;
+    NSDictionary *options;
+    NSMutableArray *paths;
     NSNotificationCenter *nc;
     NSPasteboard *pb;
+    unsigned i;
 
     nc = [NSNotificationCenter defaultCenter];
     pb = [sender draggingPasteboard];
-    filenames = [pb propertyListForType:NSFilenamesPboardType];
+    options = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
+	forKey:NSPasteboardURLReadingFileURLsOnlyKey];
+    urls = [pb readObjectsForClasses:[NSArray arrayWithObject:[NSURL class]]
+	options:options];
+    paths = [NSMutableArray arrayWithCapacity:[urls count]];
 
+    for (i = 0; i < [urls count]; i++)
+	[paths addObject:[[urls objectAtIndex:i] path]];
+
+    filenames = paths;
     [nc postNotificationName:AOFilesDroppedNotification object:filenames];
     return YES;
 }

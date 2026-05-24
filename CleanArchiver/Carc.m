@@ -28,6 +28,13 @@
 
 #import "Carc.h"
 
+static void
+CAAddUniqueObject(NSMutableArray *array, id object)
+{
+    if (object != nil && ![array containsObject:object])
+	[array addObject:object];
+}
+
 @implementation Carc
 
 #pragma mark -
@@ -37,12 +44,15 @@
 {
     NSNotificationCenter *nc;
 
-    nc = [NSNotificationCenter defaultCenter];
-
     if (self = [super init]) {
+	_task = [[NSTask alloc] init];
+	_terminationStatus = 1;
+	_launched = NO;
+
+	nc = [NSNotificationCenter defaultCenter];
 	[nc addObserver:self
 	    selector:@selector(taskDidTerminate:)
-	    name:NSTaskDidTerminateNotification 
+	    name:NSTaskDidTerminateNotification
 	    object:_task];
 
 	[self setCurrentDirectoryPath:@""];
@@ -54,10 +64,6 @@
 	[self setCompressionLevel:-1];
 	[self setExcludeMacFiles:NO];
 	[self setExcludedFiles:nil];
-
-	_task = [[NSTask alloc] init];
-	[_task setLaunchPath:[[[NSBundle mainBundle] bundlePath]
-	    stringByAppendingString:@"/Contents/Resources/carc"]];
     }
     return self;
 }
@@ -71,8 +77,13 @@
     [self terminate];
     [nc removeObserver:self];
 
+    [_ownedOutputFileHandle closeFile];
+    [_ownedOutputFileHandle release];
     [_input release];
     [_output release];
+    [_archivePassword release];
+    [_encoding release];
+    [_excludedFiles release];
     [_task release];
     [super dealloc];
 }
@@ -80,126 +91,477 @@
 #pragma mark -
 #pragma mark Running and Stopping a Task
 
-- (void)launch
+- (NSString *)resourcePath
 {
+
+    return [[NSBundle mainBundle] resourcePath];
+}
+
+- (NSString *)searchPath
+{
+    NSString *resourcePath;
+
+    resourcePath = [self resourcePath];
+    return [NSString stringWithFormat:@"%@:/bin:/usr/bin:/usr/local/bin:/usr/pkg/bin:/opt/local/bin:/sw/bin",
+	resourcePath];
+}
+
+- (NSString *)pathForCommand:(NSString *)command
+{
+    NSArray *paths;
+    NSFileManager *fm;
     NSString *path;
-    NSMutableArray *args;
-    int i;
+    unsigned i;
 
-    args = [[NSMutableArray alloc] init];
+    fm = [NSFileManager defaultManager];
 
-    [args addObject:@"-t"];
-    switch (_archiveType) {
-    case BZIP2:
-	[args addObject:@"bzip2"];
-	break;
-    case DMG:
-	[args addObject:@"dmg"];
-	break;
-    case GZIP:
-	[args addObject:@"gzip"];
-	break;
-    case RAR:
-	[args addObject:@"rar"];
-	break;
-    case SZIP:
-	[args addObject:@"7zip"];
-	break;
-    case XZ:
-	[args addObject:@"xz"];
-	break;
-    case ZIP:
-	[args addObject:@"zip"];
-	break;
-    default:
-	goto fail;
+    if ([command rangeOfString:@"/"].location != NSNotFound) {
+	if ([fm isExecutableFileAtPath:command])
+	    return command;
+	return nil;
     }
 
-    if (_archivePassword != nil) {
-	[args addObject:@"-P"];
-	[args addObject:_archivePassword];
+    paths = [[self searchPath] componentsSeparatedByString:@":"];
+    for (i = 0; i < [paths count]; i++) {
+	path = [[paths objectAtIndex:i] stringByAppendingPathComponent:command];
+	if ([fm isExecutableFileAtPath:path])
+	    return path;
     }
 
-    if (_compressionLevel != -1)
-	[args addObject:[NSString stringWithFormat:@"-%d", _compressionLevel]];
+    return nil;
+}
 
-    if (_discardRsrc)
-	[args addObject:@"-R"];
+- (NSArray *)inputArguments
+{
 
-    if (_encoding != nil) {
-	[args addObject:@"-E"];
-	[args addObject:_encoding];
-    }
+    if ([_input isKindOfClass:[NSFileHandle class]] ||
+	[_input isKindOfClass:[NSPipe class]])
+	return [NSArray arrayWithObject:@"-"];
+    if ([_input isKindOfClass:[NSArray class]])
+	return _input;
+    if ([_input isKindOfClass:[NSString class]])
+	return [NSArray arrayWithObject:_input];
 
-    if (_excludeDSS)
-	[args addObject:@"-D"];
+    return nil;
+}
 
-    if (_excludeMacFiles)
-	[args addObject:@"-C"];
+- (id)standardInputObject
+{
 
-    for (i = 0; i < [_excludedFiles count]; i++) {
-	[args addObject:@"-x"];
-	[args addObject:[_excludedFiles objectAtIndex:i]];
-    }
+    if ([_input isKindOfClass:[NSFileHandle class]] ||
+	[_input isKindOfClass:[NSPipe class]])
+	return _input;
 
-    path = [[[NSBundle mainBundle] bundlePath]
-	    stringByAppendingString:@"/Contents/Resources"];
-    path = [NSString stringWithFormat:@"%@:/bin:/usr/bin", path];
-    path = [NSString stringWithFormat:@"%@:/usr/local/bin:/usr/pkg/bin", path];
-    path = [NSString stringWithFormat:@"%@:/opt/local/bin:/sw/bin", path];
+    return nil;
+}
 
-    [_task setEnvironment:[NSDictionary dictionaryWithObject:path
-		   forKey:@"PATH"]];
+- (NSString *)absolutePathForInput:(NSString *)path
+{
+    NSString *cwd;
+
+    if ([path isEqualToString:@"-"] || [path isAbsolutePath])
+	return path;
+
+    cwd = [_task currentDirectoryPath];
+    if ([cwd length] == 0)
+	return path;
+
+    return [cwd stringByAppendingPathComponent:path];
+}
+
+- (BOOL)inputIsDirectory:(NSString *)path
+{
+    BOOL isDir;
+
+    if ([path isEqualToString:@"-"])
+	return NO;
+
+    return [[NSFileManager defaultManager]
+	fileExistsAtPath:[self absolutePathForInput:path] isDirectory:&isDir] && isDir;
+}
+
+- (id)standardOutputForArchiveData
+{
+    NSFileManager *fm;
+    NSFileHandle *fh;
+
+    if ([_output isKindOfClass:[NSFileHandle class]] ||
+	[_output isKindOfClass:[NSPipe class]])
+	return _output;
+
+    if (![_output isKindOfClass:[NSString class]])
+	return nil;
+
+    [_ownedOutputFileHandle closeFile];
+    [_ownedOutputFileHandle release];
+    _ownedOutputFileHandle = nil;
+
+    fm = [NSFileManager defaultManager];
+    [fm createFileAtPath:_output contents:nil attributes:nil];
+    fh = [NSFileHandle fileHandleForWritingAtPath:_output];
+    if (fh == nil)
+	return nil;
+
+    [fh truncateFileAtOffset:0];
+    _ownedOutputFileHandle = [fh retain];
+    return fh;
+}
+
+- (NSString *)outputArgumentWithStandardOutput:(id *)standardOutput
+{
+
+    *standardOutput = nil;
 
     if ([_output isKindOfClass:[NSFileHandle class]] ||
 	[_output isKindOfClass:[NSPipe class]]) {
-	[args addObject:@"-"];
-	[_task setStandardOutput:_output];
-    } else if ([_output isKindOfClass:[NSString class]])
-	[args addObject:_output];
-    else
-	goto fail;
+	*standardOutput = _output;
+	return @"-";
+    }
 
-    if ([_input isKindOfClass:[NSFileHandle class]] ||
-	[_input isKindOfClass:[NSPipe class]]) {
-	[args addObject:@"-"];
-	[_task setStandardInput:_input];
-    } else if ([_input isKindOfClass:[NSArray class]])
-	[args addObjectsFromArray:_input];
-    else if ([_input isKindOfClass:[NSString class]])
-	[args addObject:_input];
-    else
-	goto fail;
+    if ([_output isKindOfClass:[NSString class]])
+	return _output;
 
-    [_task setArguments:args];
-    [_task launch];
+    return nil;
+}
 
-fail:
-    [args release];
+- (NSMutableArray *)excludedFilePatternsDiscardingResources:(BOOL *)discardResources
+{
+    NSMutableArray *patterns;
+    unsigned i;
+
+    patterns = [NSMutableArray array];
+    for (i = 0; i < [_excludedFiles count]; i++)
+	CAAddUniqueObject(patterns, [_excludedFiles objectAtIndex:i]);
+
+    if (_excludeDSS)
+	CAAddUniqueObject(patterns, @".DS_Store");
+
+    if (_excludeMacFiles) {
+	*discardResources = YES;
+	CAAddUniqueObject(patterns, @"._*");
+	CAAddUniqueObject(patterns, @".DS_Store");
+	CAAddUniqueObject(patterns, @"icon\r");
+    }
+
+    if ([patterns containsObject:@"._*"])
+	*discardResources = YES;
+
+    if (*discardResources)
+	CAAddUniqueObject(patterns, @"._*");
+
+    return patterns;
+}
+
+- (BOOL)configureTaskWithCommand:(NSString *)command
+		       arguments:(NSArray *)arguments
+		     environment:(NSDictionary *)extraEnvironment
+		  standardInput:(id)standardInput
+		 standardOutput:(id)standardOutput
+{
+    NSMutableDictionary *environment;
+    NSString *path;
+
+    path = [self pathForCommand:command];
+    if (path == nil)
+	return NO;
+
+    environment = [NSMutableDictionary dictionaryWithDictionary:
+	[[NSProcessInfo processInfo] environment]];
+    [environment setObject:[self searchPath] forKey:@"PATH"];
+    if (extraEnvironment != nil)
+	[environment addEntriesFromDictionary:extraEnvironment];
+
+    [_task setLaunchPath:path];
+    [_task setArguments:arguments];
+    [_task setEnvironment:environment];
+
+    if (standardInput != nil)
+	[_task setStandardInput:standardInput];
+    if (standardOutput != nil)
+	[_task setStandardOutput:standardOutput];
+
+    return YES;
+}
+
+- (BOOL)configureCompressionTaskWithCommand:(NSString *)compress
+{
+    NSArray *srcs;
+    NSMutableArray *args;
+    NSMutableDictionary *environment;
+    NSMutableArray *excludedFiles;
+    BOOL discardResources;
+    BOOL useTar;
+    id standardOutput;
+    unsigned i;
+
+    srcs = [self inputArguments];
+    if ([srcs count] == 0)
+	return NO;
+
+    discardResources = _discardRsrc;
+    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+    useTar = [srcs count] > 1 || [self inputIsDirectory:[srcs objectAtIndex:0]]
+	|| !discardResources;
+
+    environment = [NSMutableDictionary dictionary];
+    if (_compressionLevel != -1) {
+	if ([compress isEqualToString:@"bzip2"])
+	    [environment setObject:[NSString stringWithFormat:@"-%d", _compressionLevel]
+		forKey:@"BZIP2"];
+	else if ([compress isEqualToString:@"gzip"])
+	    [environment setObject:[NSString stringWithFormat:@"-%d", _compressionLevel]
+		forKey:@"GZIP"];
+	else
+	    [environment setObject:[NSString stringWithFormat:@"-%d", _compressionLevel]
+		forKey:@"XZ_DEFAULTS"];
+    }
+
+    if (discardResources) {
+	[environment setObject:@"1" forKey:@"COPYFILE_DISABLE"];
+	[environment setObject:@"1" forKey:@"COPY_EXTENDED_ATTRIBUTES_DISABLE"];
+    }
+
+    standardOutput = [self standardOutputForArchiveData];
+    if (standardOutput == nil)
+	return NO;
+
+    if (useTar) {
+	args = [NSMutableArray arrayWithObjects:@"-cf", @"-",
+	    @"--use-compress-program", compress, nil];
+	for (i = 0; i < [excludedFiles count]; i++) {
+	    [args addObject:@"--exclude"];
+	    [args addObject:[excludedFiles objectAtIndex:i]];
+	}
+	[args addObjectsFromArray:srcs];
+
+	return [self configureTaskWithCommand:@"tar"
+	    arguments:args
+	    environment:environment
+	    standardInput:[self standardInputObject]
+	    standardOutput:standardOutput];
+    }
+
+    args = [NSMutableArray arrayWithObjects:@"-c", [srcs objectAtIndex:0], nil];
+    return [self configureTaskWithCommand:compress
+	arguments:args
+	environment:environment
+	standardInput:[self standardInputObject]
+	standardOutput:standardOutput];
+}
+
+- (BOOL)configureDMGTask
+{
+    NSArray *srcs;
+    NSMutableArray *args;
+    NSMutableArray *excludedFiles;
+    BOOL discardResources;
+    unsigned i;
+
+    srcs = [self inputArguments];
+    if ([srcs count] != 1 || ![self inputIsDirectory:[srcs objectAtIndex:0]])
+	return NO;
+    if (![_output isKindOfClass:[NSString class]])
+	return NO;
+
+    discardResources = _discardRsrc;
+    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+
+    args = [NSMutableArray arrayWithObjects:@"-o", _output, nil];
+    if (_internetEnabledDMG)
+	[args addObject:@"-i"];
+    if ([_archivePassword length] > 0) {
+	[args addObject:@"-P"];
+	[args addObject:_archivePassword];
+    }
+    for (i = 0; i < [excludedFiles count]; i++) {
+	[args addObject:@"-x"];
+	[args addObject:[excludedFiles objectAtIndex:i]];
+    }
+    [args addObject:[srcs objectAtIndex:0]];
+
+    return [self configureTaskWithCommand:@"mkdmg"
+	arguments:args
+	environment:nil
+	standardInput:nil
+	standardOutput:nil];
+}
+
+- (BOOL)configureSevenZipTask
+{
+    NSArray *srcs;
+    NSMutableArray *args;
+    NSMutableArray *excludedFiles;
+    BOOL discardResources;
+    id standardOutput;
+    unsigned i;
+
+    srcs = [self inputArguments];
+    if ([srcs count] == 0 || ![_output isKindOfClass:[NSString class]])
+	return NO;
+
+    discardResources = _discardRsrc;
+    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+
+    args = [NSMutableArray arrayWithObject:@"a"];
+    for (i = 0; i < [excludedFiles count]; i++)
+	[args addObject:[NSString stringWithFormat:@"-xr!%@",
+	    [excludedFiles objectAtIndex:i]]];
+    if ([_archivePassword length] > 0)
+	[args addObject:[NSString stringWithFormat:@"-p%@", _archivePassword]];
+    [args addObject:_output];
+    [args addObjectsFromArray:srcs];
+
+    standardOutput = [NSFileHandle fileHandleWithNullDevice];
+    return [self configureTaskWithCommand:@"7za"
+	arguments:args
+	environment:nil
+	standardInput:nil
+	standardOutput:standardOutput];
+}
+
+- (BOOL)configureZipTask
+{
+    NSArray *srcs;
+    NSMutableArray *args;
+    NSMutableArray *excludedFiles;
+    BOOL discardResources;
+    NSString *dst;
+    id standardOutput;
+    unsigned i;
+
+    srcs = [self inputArguments];
+    if ([srcs count] == 0)
+	return NO;
+
+    discardResources = _discardRsrc;
+    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+
+    args = [NSMutableArray arrayWithObject:@"-q"];
+    if ([srcs count] > 1 || [self inputIsDirectory:[srcs objectAtIndex:0]])
+	[args addObject:@"-r"];
+    if ([_encoding length] > 0) {
+	[args addObject:@"-CF"];
+	[args addObject:@"UTF-8-MAC"];
+	[args addObject:@"-CT"];
+	[args addObject:_encoding];
+    }
+    if (_compressionLevel != -1)
+	[args addObject:[NSString stringWithFormat:@"-%d", _compressionLevel]];
+    if ([_archivePassword length] > 0) {
+	[args addObject:@"-P"];
+	[args addObject:_archivePassword];
+    }
+    if (discardResources)
+	[args addObject:@"-df"];
+
+    dst = [self outputArgumentWithStandardOutput:&standardOutput];
+    if (dst == nil)
+	return NO;
+    if ([_output isKindOfClass:[NSString class]])
+	[[NSFileManager defaultManager] removeItemAtPath:_output error:nil];
+
+    [args addObject:dst];
+    [args addObjectsFromArray:srcs];
+
+    for (i = 0; i < [excludedFiles count]; i++) {
+	[args addObject:@"-x"];
+	[args addObject:[NSString stringWithFormat:@"*/%@",
+	    [excludedFiles objectAtIndex:i]]];
+    }
+
+    return [self configureTaskWithCommand:@"zip"
+	arguments:args
+	environment:nil
+	standardInput:[self standardInputObject]
+	standardOutput:standardOutput];
+}
+
+- (BOOL)configureArchiveTask
+{
+
+    switch (_archiveType) {
+    case BZIP2:
+	return [self configureCompressionTaskWithCommand:@"bzip2"];
+    case DMG:
+	return [self configureDMGTask];
+    case GZIP:
+	return [self configureCompressionTaskWithCommand:@"gzip"];
+    case SZIP:
+	return [self configureSevenZipTask];
+    case XZ:
+	return [self configureCompressionTaskWithCommand:@"xz"];
+    case ZIP:
+	return [self configureZipTask];
+    default:
+	return NO;
+    }
+}
+
+- (void)postDidFinishNotification
+{
+
+    [[NSNotificationCenter defaultCenter]
+	postNotificationName:AOCarcDidFinishArchivingNotification
+	object:self];
+}
+
+- (void)finishWithoutLaunching
+{
+
+    _terminationStatus = 1;
+    [_ownedOutputFileHandle closeFile];
+    [_ownedOutputFileHandle release];
+    _ownedOutputFileHandle = nil;
+    [self performSelector:@selector(postDidFinishNotification)
+	withObject:nil
+	afterDelay:0];
+}
+
+- (void)launch
+{
+
+    if (![self configureArchiveTask]) {
+	[self finishWithoutLaunching];
+	return;
+    }
+
+    @try {
+	[_task launch];
+	_launched = YES;
+    }
+    @catch (NSException *exception) {
+	[self finishWithoutLaunching];
+    }
 }
 
 - (void)resume
 {
 
-    [_task resume];
+    if (_launched && [_task isRunning])
+	[_task resume];
 }
 
 - (void)suspend
 {
 
-    [_task suspend];
+    if (_launched && [_task isRunning])
+	[_task suspend];
 }
 
 - (void)terminate
 {
 
-    [_task terminate];
+    if (_launched && [_task isRunning])
+	[_task terminate];
 }
 
 - (void)waitUntilExit
 {
 
-    [_task waitUntilExit];
+    if (_launched) {
+	[_task waitUntilExit];
+	_terminationStatus = [_task terminationStatus];
+    }
 }
 
 #pragma mark -
@@ -208,16 +570,22 @@ fail:
 - (int)terminationStatus
 {
 
-    return [_task terminationStatus];
+    if (_launched && ![_task isRunning])
+	_terminationStatus = [_task terminationStatus];
+
+    return _terminationStatus;
 }
 
 - (void)taskDidTerminate:(NSNotification *)n
 {
 
-    if ([n object] == _task)
-	[[NSNotificationCenter defaultCenter]
-	    postNotificationName:AOCarcDidFinishArchivingNotification
-	    object:self];
+    if ([n object] == _task) {
+	_terminationStatus = [_task terminationStatus];
+	[_ownedOutputFileHandle closeFile];
+	[_ownedOutputFileHandle release];
+	_ownedOutputFileHandle = nil;
+	[self postDidFinishNotification];
+    }
 }
 
 #pragma mark -

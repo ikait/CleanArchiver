@@ -42,6 +42,9 @@ enum archiveType {
 @interface Carc : NSObject
 {
     NSTask *_task;
+    NSFileHandle *_ownedOutputFileHandle;
+    int _terminationStatus;
+    BOOL _launched;
 
     id _input;
     id _output;
