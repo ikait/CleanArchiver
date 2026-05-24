@@ -33,9 +33,6 @@ enum archiveType {
     BZIP2,
     DMG,
     GZIP,
-    RAR,
-    SZIP,
-    XZ,
     ZIP,
 };
 

@@ -27,7 +27,10 @@ jobs:
             clean build
 
       - name: Verify app
-        run: sh scripts/test_archive_outputs.sh
+        run: |
+          APP="build/DerivedData/Build/Products/Release/CleanArchiver.app"
+          sh scripts/test_archive_outputs.sh "$APP"
+          sh scripts/verify_release_metadata.sh "$APP" "$GITHUB_REF_NAME" 1200
 
       - name: Archive app
         run: |

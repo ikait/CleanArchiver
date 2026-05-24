@@ -34,7 +34,8 @@ CATCreateDirectory(NSString *path)
 }
 
 static void
-CATRunArchive(enum archiveType type, NSString *cwd, id input, NSString *output)
+CATRunArchiveWithPassword(enum archiveType type, NSString *cwd, id input,
+    NSString *output, NSString *password, NSString *encoding)
 {
     BOOL isDirectory = NO;
     Carc *task = [[Carc alloc] init];
@@ -46,6 +47,10 @@ CATRunArchive(enum archiveType type, NSString *cwd, id input, NSString *output)
     [task setDiscardRsrc:YES];
     [task setExcludeDSS:YES];
     [task setExcludedFiles:[NSArray arrayWithObject:@"skip.txt"]];
+    if ([password length] > 0)
+	[task setArchivePassword:password];
+    if ([encoding length] > 0)
+	[task setEncoding:encoding];
     [task launch];
     [task waitUntilExit];
 
@@ -56,6 +61,12 @@ CATRunArchive(enum archiveType type, NSString *cwd, id input, NSString *output)
 	CATFail([NSString stringWithFormat:@"archive missing: %@", output]);
 }
 
+static void
+CATRunArchive(enum archiveType type, NSString *cwd, id input, NSString *output)
+{
+    CATRunArchiveWithPassword(type, cwd, input, output, nil, nil);
+}
+
 int
 main(int argc, const char *argv[])
 {
@@ -64,6 +75,7 @@ main(int argc, const char *argv[])
 	NSString *inputRoot;
 	NSString *folder;
 	NSString *nested;
+	NSString *localizedFolder;
 	NSString *outputRoot;
 
 	if (argc != 2)
@@ -73,9 +85,11 @@ main(int argc, const char *argv[])
 	inputRoot = [root stringByAppendingPathComponent:@"input"];
 	folder = [inputRoot stringByAppendingPathComponent:@"Sample Folder"];
 	nested = [folder stringByAppendingPathComponent:@"nested"];
+	localizedFolder = [inputRoot stringByAppendingPathComponent:@"日本語 Folder"];
 	outputRoot = [root stringByAppendingPathComponent:@"output"];
 
 	CATCreateDirectory(nested);
+	CATCreateDirectory(localizedFolder);
 	CATCreateDirectory(outputRoot);
 	CATWriteFile([folder stringByAppendingPathComponent:@"hello.txt"],
 	    @"Hello from CleanArchiver\n");
@@ -85,9 +99,17 @@ main(int argc, const char *argv[])
 	    @"Finder metadata\n");
 	CATWriteFile([folder stringByAppendingPathComponent:@"skip.txt"],
 	    @"Excluded file\n");
+	CATWriteFile([localizedFolder stringByAppendingPathComponent:@"東京.txt"],
+	    @"Localized filename\n");
 
 	CATRunArchive(ZIP, inputRoot, @"Sample Folder",
 	    [outputRoot stringByAppendingPathComponent:@"sample.zip"]);
+	CATRunArchiveWithPassword(ZIP, inputRoot, @"日本語 Folder",
+	    [outputRoot stringByAppendingPathComponent:@"localized.zip"],
+	    nil, nil);
+	CATRunArchiveWithPassword(ZIP, folder, @"hello.txt",
+	    [outputRoot stringByAppendingPathComponent:@"password.zip"],
+	    @"cleanarchiver", nil);
 	CATRunArchive(GZIP, folder, @"hello.txt",
 	    [outputRoot stringByAppendingPathComponent:@"hello.txt.gz"]);
 	CATRunArchive(BZIP2, inputRoot, @"Sample Folder",
