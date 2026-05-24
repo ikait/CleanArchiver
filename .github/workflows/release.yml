@@ -11,7 +11,7 @@ permissions:
 jobs:
   release:
     name: Build and publish app
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
       - name: Check out repository
@@ -27,13 +27,7 @@ jobs:
             clean build
 
       - name: Verify app
-        run: |
-          APP="build/DerivedData/Build/Products/Release/CleanArchiver.app"
-
-          test -d "$APP"
-          file "$APP/Contents/MacOS/CleanArchiver" | grep -q 'arm64'
-          file "$APP/Contents/Resources/zip" | grep -q 'arm64'
-          codesign --verify --deep --strict "$APP"
+        run: sh scripts/test_archive_outputs.sh
 
       - name: Archive app
         run: |

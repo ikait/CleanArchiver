@@ -42,9 +42,14 @@ enum archiveType {
 @interface Carc : NSObject
 {
     NSTask *_task;
+    NSTask *_runningTask;
+    NSCondition *_internalTaskCondition;
     NSFileHandle *_ownedOutputFileHandle;
     int _terminationStatus;
     BOOL _launched;
+    BOOL _usesInternalTask;
+    BOOL _internalTaskFinished;
+    BOOL _terminateRequested;
 
     id _input;
     id _output;
@@ -61,7 +66,6 @@ enum archiveType {
 }
 
 - (id)init;
-- (void)dealloc;
 
 // Task management methods
 - (void)launch;

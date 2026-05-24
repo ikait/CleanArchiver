@@ -206,6 +206,9 @@ generic: flags
 generic_gcc:
 	$(MAKE) $(MAKEF) generic CC=gcc CPP="gcc -E"
 
+generic_zip: flags
+	eval $(MAKE) $(MAKEF) zip `cat flags`
+
 # AT&T 6300 PLUS (don't know yet how to allocate 64K bytes):
 att6300nodir:
 	$(MAKE) $(MAKEF) zips LFLAGS1="-Ml -s" \
@@ -312,6 +315,16 @@ macosx:
 		;;						\
 	*)							\
 		$(MAKE) $(MAKEF) generic			\
+		;;						\
+	esac
+
+macosx_zip:
+	@case "$(ARCH)" in					\
+	arm64)							\
+		$(MAKE) $(MAKEF) generic_zip CC="gcc -arch $(ARCH) -Wno-error=implicit-function-declaration"	\
+		;;						\
+	*)							\
+		$(MAKE) $(MAKEF) generic_zip			\
 		;;						\
 	esac
 

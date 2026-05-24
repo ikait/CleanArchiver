@@ -42,7 +42,6 @@
 		B536BA77109C2D7F003C7479 /* CAController.m in Sources */ = {isa = PBXBuildFile; fileRef = B536BA64109C2D7F003C7479 /* CAController.m */; };
 		B536BA78109C2D7F003C7479 /* CAView.h in Headers */ = {isa = PBXBuildFile; fileRef = B536BA65109C2D7F003C7479 /* CAView.h */; };
 		B536BA79109C2D7F003C7479 /* CAView.m in Sources */ = {isa = PBXBuildFile; fileRef = B536BA66109C2D7F003C7479 /* CAView.m */; };
-		B536BA94109C2EBB003C7479 /* mkdmg in Resources */ = {isa = PBXBuildFile; fileRef = B536BA91109C2EBB003C7479 /* mkdmg */; };
 		B536BA98109C2F47003C7479 /* bgactive.png in Resources */ = {isa = PBXBuildFile; fileRef = B536BA90109C2EBB003C7479 /* bgactive.png */; };
 		B536BA9E109C2F5A003C7479 /* version.plist in Resources */ = {isa = PBXBuildFile; fileRef = B536BA9C109C2F5A003C7479 /* version.plist */; };
 		B545ACB9109C342C009CDDE0 /* CleanArchiverHelp in Resources */ = {isa = PBXBuildFile; fileRef = B545ACAC109C342C009CDDE0 /* CleanArchiverHelp */; };
@@ -87,7 +86,6 @@
 		B536BA65109C2D7F003C7479 /* CAView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAView.h; path = CleanArchiver/CAView.h; sourceTree = "<group>"; };
 		B536BA66109C2D7F003C7479 /* CAView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAView.m; path = CleanArchiver/CAView.m; sourceTree = "<group>"; };
 		B536BA90109C2EBB003C7479 /* bgactive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = bgactive.png; path = CleanArchiver/bgactive.png; sourceTree = "<group>"; };
-		B536BA91109C2EBB003C7479 /* mkdmg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; name = mkdmg; path = CleanArchiver/mkdmg; sourceTree = "<group>"; };
 		B536BA9B109C2F5A003C7479 /* README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.txt; path = CleanArchiver/README.txt; sourceTree = "<group>"; };
 		B536BA9C109C2F5A003C7479 /* version.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = version.plist; path = CleanArchiver/version.plist; sourceTree = "<group>"; };
 		B553E41F109DC60C009DDDA0 /* Carc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Carc.h; path = CleanArchiver/Carc.h; sourceTree = "<group>"; };
@@ -173,7 +171,6 @@
 				B58986E210B19AED00C67219 /* License-zip.txt */,
 				B5F43A9E109C3298000150B6 /* Localizable.strings */,
 				B52758FB2351E657006B2FAB /* MainMenu.xib */,
-				B536BA91109C2EBB003C7479 /* mkdmg */,
 				B536BA9C109C2F5A003C7479 /* version.plist */,
 				B5FE4B3C109FD2DB00E1608F /* zip */,
 			);
@@ -244,7 +241,7 @@
 				LastUpgradeCheck = 1250;
 			};
 			buildConfigurationList = B5EA5CE808F15FD40064B72D /* Build configuration list for PBXProject "CleanArchiver" */;
-			compatibilityVersion = "Xcode 3.1";
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -268,7 +265,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5B4F57E2830D7B6000BB477 /* bg.png in Resources */,
-				B536BA94109C2EBB003C7479 /* mkdmg in Resources */,
 				B52758EE2351D2E7006B2FAB /* Images.xcassets in Resources */,
 				B536BA98109C2F47003C7479 /* bgactive.png in Resources */,
 				B536BA9E109C2F5A003C7479 /* version.plist in Resources */,
@@ -297,7 +293,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd zip\n\n[ -e \"zip\" ] && exit 0\n\nbuilt_products=\"\"\nfor arch in ${ARCHS}; do\n  build_dir=../build/${arch}\n  rm -rf ${build_dir}\n  mkdir -p ${build_dir}\n\n  make -f unix/Makefile clean\n  make -f unix/Makefile macosx ARCH=${arch}\n  cp zip ${build_dir}\n  built_products=\"${built_products} ${build_dir}/zip\"\ndone\n\nlipo -create ${built_products} -output zip\ncp LICENSE License-zip.txt\n\necho \"Done\"\nexit 0\n";
+			shellScript = "cd zip\n\nbuilt_products=\"\"\nfor arch in ${ARCHS}; do\n  build_dir=../build/${arch}\n  rm -rf ${build_dir}\n  mkdir -p ${build_dir}\n\n  make -f unix/Makefile clean\n  make -f unix/Makefile macosx_zip ARCH=${arch}\n  cp zip ${build_dir}\n  built_products=\"${built_products} ${build_dir}/zip\"\ndone\n\nlipo -create ${built_products} -output zip\ncp LICENSE License-zip.txt\n\necho \"Done\"\nexit 0\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -371,6 +367,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = YES;
@@ -383,9 +380,7 @@
 					"$(PROJECT_DIR)",
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)\"";
-				GCC_ENABLE_TRIGRAPHS = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_PPC64 = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = CleanArchiver/CleanArchiver_Prefix.pch;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
@@ -406,7 +401,6 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				WARNING_CFLAGS = "";
 				WRAPPER_EXTENSION = app;
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
@@ -454,6 +448,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
@@ -466,10 +461,7 @@
 					"$(PROJECT_DIR)",
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)\"";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_TRIGRAPHS = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_MODEL_PPC64 = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = CleanArchiver/CleanArchiver_Prefix.pch;
@@ -491,7 +483,6 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				WARNING_CFLAGS = "";
 				WRAPPER_EXTENSION = app;
-				ZERO_LINK = YES;
 			};
 			name = Debug;
 		};
@@ -543,7 +534,6 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_NAME = zip;
@@ -559,7 +549,6 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_NAME = zip;
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};

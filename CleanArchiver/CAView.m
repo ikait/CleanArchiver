@@ -58,14 +58,6 @@
     return self;
 }
 
-- (void)dealloc
-{
-
-    [_activeBackgroundImage release];
-    [super dealloc];
-}
-
-#pragma mark -
 #pragma mark Drawing
 
 - (void)drawRect:(NSRect)rect

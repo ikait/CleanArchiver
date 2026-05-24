@@ -46,8 +46,12 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
     if (self = [super init]) {
 	_task = [[NSTask alloc] init];
+	_internalTaskCondition = [[NSCondition alloc] init];
 	_terminationStatus = 1;
 	_launched = NO;
+	_usesInternalTask = NO;
+	_internalTaskFinished = YES;
+	_terminateRequested = NO;
 
 	nc = [NSNotificationCenter defaultCenter];
 	[nc addObserver:self
@@ -78,14 +82,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     [nc removeObserver:self];
 
     [_ownedOutputFileHandle closeFile];
-    [_ownedOutputFileHandle release];
-    [_input release];
-    [_output release];
-    [_archivePassword release];
-    [_encoding release];
-    [_excludedFiles release];
-    [_task release];
-    [super dealloc];
 }
 
 #pragma mark -
@@ -93,7 +89,16 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
 - (NSString *)resourcePath
 {
+    NSString *override;
 
+    override = [[[NSProcessInfo processInfo] environment]
+	objectForKey:@"CLEANARCHIVER_RESOURCE_PATH"];
+    if ([override length] > 0) {
+	if (![override isAbsolutePath])
+	    override = [[[NSFileManager defaultManager] currentDirectoryPath]
+		stringByAppendingPathComponent:override];
+	return [override stringByStandardizingPath];
+    }
     return [[NSBundle mainBundle] resourcePath];
 }
 
@@ -193,7 +198,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	return nil;
 
     [_ownedOutputFileHandle closeFile];
-    [_ownedOutputFileHandle release];
     _ownedOutputFileHandle = nil;
 
     fm = [NSFileManager defaultManager];
@@ -203,7 +207,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 	return nil;
 
     [fh truncateFileAtOffset:0];
-    _ownedOutputFileHandle = [fh retain];
+    _ownedOutputFileHandle = fh;
     return fh;
 }
 
@@ -352,10 +356,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (BOOL)configureDMGTask
 {
     NSArray *srcs;
-    NSMutableArray *args;
-    NSMutableArray *excludedFiles;
-    BOOL discardResources;
-    unsigned i;
 
     srcs = [self inputArguments];
     if ([srcs count] != 1 || ![self inputIsDirectory:[srcs objectAtIndex:0]])
@@ -363,27 +363,259 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     if (![_output isKindOfClass:[NSString class]])
 	return NO;
 
-    discardResources = _discardRsrc;
-    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+    return YES;
+}
 
-    args = [NSMutableArray arrayWithObjects:@"-o", _output, nil];
-    if (_internetEnabledDMG)
-	[args addObject:@"-i"];
-    if ([_archivePassword length] > 0) {
-	[args addObject:@"-P"];
-	[args addObject:_archivePassword];
+- (int)runCommand:(NSString *)command
+	arguments:(NSArray *)arguments
+      standardInput:(NSString *)standardInput
+     standardOutput:(NSString **)standardOutput
+{
+    NSTask *task;
+    NSPipe *inputPipe;
+    NSPipe *outputPipe;
+    NSFileHandle *inputWriter;
+    NSData *outputData;
+    NSString *path;
+    int status;
+
+    if (_terminateRequested)
+	return 1;
+
+    path = [self pathForCommand:command];
+    if (path == nil)
+	return 1;
+
+    task = [[NSTask alloc] init];
+    [task setLaunchPath:path];
+    [task setArguments:arguments];
+    if ([[_task currentDirectoryPath] length] > 0)
+	[task setCurrentDirectoryPath:[_task currentDirectoryPath]];
+    NSMutableDictionary *environment = [NSMutableDictionary dictionaryWithDictionary:
+	[[NSProcessInfo processInfo] environment]];
+    [environment setObject:[self searchPath] forKey:@"PATH"];
+    [task setEnvironment:environment];
+
+    inputPipe = nil;
+    if (standardInput != nil) {
+	inputPipe = [NSPipe pipe];
+	[task setStandardInput:inputPipe];
     }
+
+    outputPipe = nil;
+    if (standardOutput != NULL) {
+	outputPipe = [NSPipe pipe];
+	[task setStandardOutput:outputPipe];
+    }
+
+    [_internalTaskCondition lock];
+    _runningTask = task;
+    [_internalTaskCondition unlock];
+
+    @try {
+	[task launch];
+	if (standardInput != nil) {
+	    inputWriter = [inputPipe fileHandleForWriting];
+	    [inputWriter writeData:[standardInput dataUsingEncoding:NSUTF8StringEncoding]];
+	    [inputWriter closeFile];
+	}
+	[task waitUntilExit];
+	status = [task terminationStatus];
+    }
+    @catch (NSException *exception) {
+	status = 1;
+    }
+
+    if (standardOutput != NULL) {
+	outputData = [[outputPipe fileHandleForReading] readDataToEndOfFile];
+	*standardOutput = [[NSString alloc] initWithData:outputData
+	    encoding:NSUTF8StringEncoding];
+    }
+
+    [_internalTaskCondition lock];
+    if (_runningTask == task)
+	_runningTask = nil;
+    [_internalTaskCondition unlock];
+
+    return status;
+}
+
+- (NSString *)temporaryDMGPathForOutputPath:(NSString *)outputPath
+{
+    NSString *base;
+
+    if ([[outputPath pathExtension] isEqualToString:@"dmg"])
+	base = [outputPath stringByDeletingPathExtension];
+    else
+	base = outputPath;
+
+    return [base stringByAppendingPathExtension:@"temp.dmg"];
+}
+
+- (NSString *)deviceFromHdiutilAttachOutput:(NSString *)output
+{
+    NSRange range;
+    NSString *tail;
+    NSUInteger i;
+
+    range = [output rangeOfString:@"/dev/disk"];
+    if (range.location == NSNotFound)
+	return nil;
+
+    tail = [output substringFromIndex:range.location];
+    for (i = 0; i < [tail length]; i++) {
+	unichar c = [tail characterAtIndex:i];
+	if ([[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:c])
+	    break;
+    }
+
+    return [tail substringToIndex:i];
+}
+
+- (NSString *)volumeFromHdiutilAttachOutput:(NSString *)output
+{
+    NSArray *lines;
+    NSString *line;
+    NSRange range;
+    NSInteger i;
+
+    lines = [output componentsSeparatedByCharactersInSet:
+	[NSCharacterSet newlineCharacterSet]];
+
+    for (i = [lines count] - 1; i >= 0; i--) {
+	line = [lines objectAtIndex:i];
+	range = [line rangeOfString:@"/Volumes/"];
+	if (range.location != NSNotFound)
+	    return [line substringFromIndex:range.location];
+    }
+
+    return nil;
+}
+
+- (BOOL)removeExcludedFiles:(NSArray *)excludedFiles fromVolume:(NSString *)volume
+{
+    NSMutableArray *args;
+    unsigned i;
+
+    if ([excludedFiles count] == 0)
+	return YES;
+
+    args = [NSMutableArray arrayWithObjects:volume, @"(", nil];
     for (i = 0; i < [excludedFiles count]; i++) {
-	[args addObject:@"-x"];
+	if (i > 0)
+	    [args addObject:@"-o"];
+	[args addObject:@"-name"];
 	[args addObject:[excludedFiles objectAtIndex:i]];
     }
-    [args addObject:[srcs objectAtIndex:0]];
+    [args addObject:@")"];
+    [args addObject:@"-delete"];
 
-    return [self configureTaskWithCommand:@"mkdmg"
+    return [self runCommand:@"find"
 	arguments:args
-	environment:nil
 	standardInput:nil
-	standardOutput:nil];
+	standardOutput:NULL] == 0;
+}
+
+- (void)runDMGArchive
+{
+    NSArray *srcs;
+    NSString *src;
+    NSString *tempPath;
+    NSString *device;
+    NSString *volume;
+    NSString *attachOutput;
+    NSMutableArray *args;
+    NSMutableArray *excludedFiles;
+    BOOL discardResources;
+    int status;
+
+    @autoreleasepool {
+    device = nil;
+    tempPath = nil;
+    status = 1;
+
+    srcs = [self inputArguments];
+    src = [srcs objectAtIndex:0];
+    tempPath = [self temporaryDMGPathForOutputPath:_output];
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:_output error:nil];
+
+    args = [NSMutableArray arrayWithObjects:@"create", @"-quiet",
+	@"-srcFolder", src, @"-format", @"UDRW", @"-fs", @"HFS+",
+	@"-ov", tempPath, nil];
+    if ([self runCommand:@"hdiutil" arguments:args standardInput:nil
+	standardOutput:NULL] != 0)
+	goto finish;
+
+    attachOutput = nil;
+    args = [NSMutableArray arrayWithObjects:@"attach", @"-noverify", tempPath, nil];
+    if ([self runCommand:@"hdiutil" arguments:args standardInput:nil
+	standardOutput:&attachOutput] != 0)
+	goto finish;
+
+    device = [self deviceFromHdiutilAttachOutput:attachOutput];
+    volume = [self volumeFromHdiutilAttachOutput:attachOutput];
+    if (device == nil || volume == nil)
+	goto finish;
+
+    discardResources = _discardRsrc;
+    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+    if (![self removeExcludedFiles:excludedFiles fromVolume:volume])
+	goto finish;
+
+    args = [NSMutableArray arrayWithObjects:@"detach", @"-quiet", device, nil];
+    if ([self runCommand:@"hdiutil" arguments:args standardInput:nil
+	standardOutput:NULL] != 0)
+	goto finish;
+    device = nil;
+
+    args = [NSMutableArray arrayWithObjects:@"convert", @"-quiet",
+	@"-format", @"UDZO", @"-o", _output, @"-ov", tempPath, nil];
+    if ([_archivePassword length] > 0) {
+	[args addObject:@"-encryption"];
+	[args addObject:@"-stdinpass"];
+    }
+    if ([self runCommand:@"hdiutil" arguments:args
+	standardInput:([_archivePassword length] > 0 ? _archivePassword : nil)
+	standardOutput:NULL] != 0)
+	goto finish;
+
+    if (_internetEnabledDMG) {
+	args = [NSMutableArray arrayWithObjects:@"internet-enable", @"-quiet",
+	    @"-yes", _output, nil];
+	if ([_archivePassword length] > 0) {
+	    [args addObject:@"-encryption"];
+	    [args addObject:@"-stdinpass"];
+	}
+	if ([self runCommand:@"hdiutil" arguments:args
+	    standardInput:([_archivePassword length] > 0 ? _archivePassword : nil)
+	    standardOutput:NULL] != 0)
+	    goto finish;
+    }
+
+    status = 0;
+
+finish:
+    if (device != nil)
+	[self runCommand:@"hdiutil"
+	    arguments:[NSArray arrayWithObjects:@"detach", @"-quiet", device, nil]
+	    standardInput:nil
+	    standardOutput:NULL];
+    if (tempPath != nil)
+	[[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+    if (status != 0)
+	[[NSFileManager defaultManager] removeItemAtPath:_output error:nil];
+
+    [_internalTaskCondition lock];
+    _terminationStatus = status;
+    _internalTaskFinished = YES;
+    [_internalTaskCondition signal];
+    [_internalTaskCondition unlock];
+
+    [self performSelectorOnMainThread:@selector(postDidFinishNotification)
+	withObject:nil
+	waitUntilDone:NO];
+    }
 }
 
 - (BOOL)configureSevenZipTask
@@ -510,7 +742,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
     _terminationStatus = 1;
     [_ownedOutputFileHandle closeFile];
-    [_ownedOutputFileHandle release];
     _ownedOutputFileHandle = nil;
     [self performSelector:@selector(postDidFinishNotification)
 	withObject:nil
@@ -519,6 +750,23 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 
 - (void)launch
 {
+
+    if (_archiveType == DMG) {
+	if (![self configureDMGTask]) {
+	    [self finishWithoutLaunching];
+	    return;
+	}
+	[_internalTaskCondition lock];
+	_usesInternalTask = YES;
+	_internalTaskFinished = NO;
+	_terminateRequested = NO;
+	_launched = YES;
+	_terminationStatus = 1;
+	[_internalTaskCondition unlock];
+	[self performSelectorInBackground:@selector(runDMGArchive)
+	    withObject:nil];
+	return;
+    }
 
     if (![self configureArchiveTask]) {
 	[self finishWithoutLaunching];
@@ -551,12 +799,26 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)terminate
 {
 
+    [_internalTaskCondition lock];
+    _terminateRequested = YES;
+    if (_usesInternalTask && _runningTask != nil && [_runningTask isRunning])
+	[_runningTask terminate];
+    [_internalTaskCondition unlock];
+
     if (_launched && [_task isRunning])
 	[_task terminate];
 }
 
 - (void)waitUntilExit
 {
+
+    if (_usesInternalTask) {
+	[_internalTaskCondition lock];
+	while (!_internalTaskFinished)
+	    [_internalTaskCondition wait];
+	[_internalTaskCondition unlock];
+	return;
+    }
 
     if (_launched) {
 	[_task waitUntilExit];
@@ -570,6 +832,9 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (int)terminationStatus
 {
 
+    if (_usesInternalTask)
+	return _terminationStatus;
+
     if (_launched && ![_task isRunning])
 	_terminationStatus = [_task terminationStatus];
 
@@ -582,7 +847,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     if ([n object] == _task) {
 	_terminationStatus = [_task terminationStatus];
 	[_ownedOutputFileHandle closeFile];
-	[_ownedOutputFileHandle release];
 	_ownedOutputFileHandle = nil;
 	[self postDidFinishNotification];
     }
@@ -610,8 +874,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)setInput:(id)anObject
 {
 
-    [anObject retain];
-    [_input release];
     _input = anObject;
 }
 
@@ -623,8 +885,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)setOutput:(id)anObject
 {
 
-    [anObject retain];
-    [_output release];
     _output = anObject;
 }
 
@@ -636,9 +896,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)setArchivePassword:(NSString *)password
 {
 
-    [password retain];
-    [_archivePassword release];
-    _archivePassword = password;
+    _archivePassword = [password copy];
 }
 
 - (enum archiveType)archiveType
@@ -682,9 +940,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)setEncoding:(NSString *)encoding
 {
 
-    [encoding retain];
-    [_encoding release];
-    _encoding = encoding;
+    _encoding = [encoding copy];
 }
 
 - (BOOL)excludeDSS
@@ -717,9 +973,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (void)setExcludedFiles:(NSArray *)filenames
 {
 
-    [filenames retain];
-    [_excludedFiles release];
-    _excludedFiles = filenames;
+    _excludedFiles = [filenames copy];
 }
 
 - (BOOL)internetEnabledDMG

@@ -45,7 +45,7 @@ CARunAlert(NSString *message)
 {
     NSAlert *alert;
 
-    alert = [[[NSAlert alloc] init] autorelease];
+    alert = [[NSAlert alloc] init];
     [alert setMessageText:message];
     [alert addButtonWithTitle:@"OK"];
     [alert runModal];
@@ -121,8 +121,6 @@ CARunAlert(NSString *message)
 - (void)dealloc {
 
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    [_operationQueue release];
-    [super dealloc];
 }
 
 #pragma mark -
@@ -186,7 +184,7 @@ CARunAlert(NSString *message)
     [[NSWorkspace sharedWorkspace]
     noteFileSystemChanged:[_mainTask output]];
 
-    [_mainTask release];
+    _mainTask = nil;
 
     if ([_operationQueue count] > 0)
 	[self cleanArchive];
@@ -418,7 +416,7 @@ CARunAlert(NSString *message)
     int i, level;
     BOOL ai, e_, ed, ie, ra;
 
-    status = [[NSMutableDictionary alloc] init];
+    status = [NSMutableDictionary dictionary];
 
     fm = [NSFileManager defaultManager];
     type = (enum archiveTypeMenuIndex)[_archiveTypeMenu indexOfSelectedItem];
@@ -497,7 +495,6 @@ CARunAlert(NSString *message)
     } else if (_terminateAfterArchiving == YES)
 	[NSApp terminate:self];
 
-    [status release];
 }
 
 - (void)cleanArchive
@@ -512,11 +509,10 @@ CARunAlert(NSString *message)
     int i, level;
     BOOL isDir;
 
-    exfiles = [[NSMutableArray alloc] init];
+    exfiles = [NSMutableArray array];
     fm = [NSFileManager defaultManager];
 
     status = [_operationQueue objectAtIndex:0];
-    [status retain];
     [_operationQueue removeObjectAtIndex:0];
 
     type = [[status objectForKey:AOArchiveType] intValue];
@@ -561,15 +557,13 @@ CARunAlert(NSString *message)
     if ([srcs count] == 1)
 	[_mainTask setInput:[[srcs objectAtIndex:0] lastPathComponent]];
     else {
-	srcbases = [[NSMutableArray alloc] init];
+	srcbases = [NSMutableArray array];
 
 	for (i = 0; i < [srcs count]; i++)
 	    [srcbases addObject:
 		[[srcs objectAtIndex:i] lastPathComponent]];
 
 	[_mainTask setInput:srcbases];
-
-	[srcbases release];
     }
 
     if ([[status objectForKey:AODiscardRsrc] intValue])
@@ -589,8 +583,6 @@ CARunAlert(NSString *message)
 	    stringWithFormat:NSLocalizedString(@"Archiving: %@", nil),
 	    [dst lastPathComponent]]];
 
-    [exfiles release];
-    [status release];
 }
 
 @end
