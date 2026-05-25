@@ -35,6 +35,9 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP" "$ARCHIVE"
           echo "RELEASE_ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
+      - name: Verify release archive
+        run: sh scripts/verify_release_archive.sh "$RELEASE_ARCHIVE" "$GITHUB_REF_NAME" 1200
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

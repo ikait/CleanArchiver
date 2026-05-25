@@ -67,6 +67,25 @@ CATRunArchive(enum archiveType type, NSString *cwd, id input, NSString *output)
     CATRunArchiveWithPassword(type, cwd, input, output, nil, nil);
 }
 
+static void
+CATRunInvalidDMGArchive(NSString *cwd, NSString *input, NSString *output)
+{
+    Carc *task = [[Carc alloc] init];
+
+    [task setArchiveType:DMG];
+    [task setCurrentDirectoryPath:cwd];
+    [task setInput:input];
+    [task setOutput:output];
+    [task launch];
+    [task waitUntilExit];
+
+    if ([task terminationStatus] == 0)
+	CATFail(@"invalid dmg archive should fail");
+    if (![[task lastError] isEqualToString:@"Invalid disk image input."])
+	CATFail([NSString stringWithFormat:@"unexpected dmg error: %@",
+	    [task lastError]]);
+}
+
 int
 main(int argc, const char *argv[])
 {
@@ -116,6 +135,8 @@ main(int argc, const char *argv[])
 	    [outputRoot stringByAppendingPathComponent:@"sample.tar.bz2"]);
 	CATRunArchive(DMG, inputRoot, @"Sample Folder",
 	    [outputRoot stringByAppendingPathComponent:@"sample.dmg"]);
+	CATRunInvalidDMGArchive(folder, @"hello.txt",
+	    [outputRoot stringByAppendingPathComponent:@"invalid.dmg"]);
 
 	printf("%s\n", [outputRoot fileSystemRepresentation]);
     }

@@ -5,6 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import "CAArchiveJob.h"
+#import "CAArchiveCommandBuilder.h"
 #import "CAArchiveNameBuilder.h"
 #import "CAArchivePreferences.h"
 #import "CAArchiveQueue.h"
@@ -29,6 +30,7 @@ main(int argc, const char *argv[])
     @autoreleasepool {
 	NSUserDefaults *defaults;
 	CAArchivePreferences *preferences;
+	CAArchiveCommandSpec *zipSpec;
 	CAArchiveJob *job;
 	CAArchiveQueue *queue;
 	NSString *folderArchive;
@@ -46,7 +48,7 @@ main(int argc, const char *argv[])
 	CATAssert([preferences discardResourceForks],
 	    @"default should discard resource forks");
 
-	[preferences setArchiveTypeTitle:@"zip"];
+	[preferences setArchiveTypeIdentifier:CAArchiveTypeIdentifierZIP];
 	[preferences setCompressionLevel:9];
 	[preferences setEncoding:@"CP932"];
 	[preferences setExcludeDSStore:YES];
@@ -54,7 +56,8 @@ main(int argc, const char *argv[])
 	[preferences save];
 
 	preferences = [[CAArchivePreferences alloc] initWithUserDefaults:defaults];
-	CATAssert([[preferences archiveTypeTitle] isEqualToString:@"zip"],
+	CATAssert([[preferences archiveTypeIdentifier]
+	    isEqualToString:CAArchiveTypeIdentifierZIP],
 	    @"archive type should persist");
 	CATAssert([preferences compressionLevel] == 9,
 	    @"compression level should persist");
@@ -76,6 +79,29 @@ main(int argc, const char *argv[])
 	    sourceIsDirectory:NO];
 	CATAssert([singleFileArchive isEqualToString:@"/tmp/readme.txt.gz"],
 	    @"single gzip path should use .gz");
+
+	CATAssert(CAArchiveTypeMenuIndexForIdentifier(@"unknown") == GZIPT,
+	    @"unknown archive type should fall back to gzip");
+
+	zipSpec = [CAArchiveCommandBuilder zipCommandSpecWithSourceArguments:
+	    [NSArray arrayWithObject:@"Sample Folder"]
+	    firstSourceIsDirectory:YES
+	    outputArgument:@"/tmp/Sample Folder.zip"
+	    encoding:@"CP932"
+	    compressionLevel:9
+	    password:@"secret"
+	    discardResourceForks:YES
+	    excludeDSStore:YES
+	    excludeMacFiles:NO
+	    explicitExcludedFiles:[NSArray arrayWithObject:@"skip.txt"]];
+	CATAssert([[zipSpec command] isEqualToString:@"zip"],
+	    @"zip command spec should use zip");
+	CATAssert([[zipSpec arguments] containsObject:@"-r"],
+	    @"zip folder spec should recurse");
+	CATAssert([[zipSpec arguments] containsObject:@"-df"],
+	    @"zip spec should discard resource forks");
+	CATAssert([[zipSpec arguments] containsObject:@"*/skip.txt"],
+	    @"zip spec should exclude explicit files");
 
 	job = [CAArchiveJob jobWithSourcePaths:
 	    [NSArray arrayWithObjects:@"/tmp/a.txt", @"/tmp/b.txt", nil]

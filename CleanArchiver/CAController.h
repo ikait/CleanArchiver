@@ -27,22 +27,10 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "CAArchiveTypes.h"
 
 @class Carc;
 @class CAArchiveQueue;
-
-enum archiveTypeMenuIndex {
-    DMGT = 0,
-    BZIP2T,
-    GZIPT,
-    ZIPT,
-};
-
-enum compressionLevelMenuIndex {
-    FAST = 0,
-    NORMAL,
-    BEST,
-};
 
 @interface CAController : NSObject
 {

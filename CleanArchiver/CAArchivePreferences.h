@@ -4,6 +4,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "CAArchiveTypes.h"
 
 extern NSString *AOArchiveIndividually;
 extern NSString *AOArchiveType;
@@ -18,7 +19,7 @@ extern NSString *AOReplaceAutomatically;
 @interface CAArchivePreferences : NSObject
 {
     NSUserDefaults *_userDefaults;
-    NSString *_archiveTypeTitle;
+    NSString *_archiveTypeIdentifier;
     int _compressionLevel;
     NSString *_encoding;
     BOOL _discardResourceForks;
@@ -32,8 +33,8 @@ extern NSString *AOReplaceAutomatically;
 - (id)initWithUserDefaults:(NSUserDefaults *)userDefaults;
 - (void)save;
 
-- (NSString *)archiveTypeTitle;
-- (void)setArchiveTypeTitle:(NSString *)archiveTypeTitle;
+- (NSString *)archiveTypeIdentifier;
+- (void)setArchiveTypeIdentifier:(NSString *)archiveTypeIdentifier;
 - (int)compressionLevel;
 - (void)setCompressionLevel:(int)compressionLevel;
 - (NSString *)encoding;

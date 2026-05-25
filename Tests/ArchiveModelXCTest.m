@@ -5,9 +5,26 @@
 
 #import <XCTest/XCTest.h>
 #import "CAArchiveJob.h"
+#import "CAArchiveCommandBuilder.h"
 #import "CAArchiveNameBuilder.h"
 #import "CAArchivePreferences.h"
 #import "CAArchiveQueue.h"
+#import "CADMGArchiver.h"
+
+@interface CAFailingCommandRunner : NSObject <CACommandRunning>
+@end
+
+@implementation CAFailingCommandRunner
+
+- (int)runCommand:(NSString *)command
+	arguments:(NSArray *)arguments
+    standardInput:(NSString *)standardInput
+   standardOutput:(NSString **)standardOutput
+{
+    return 1;
+}
+
+@end
 
 @interface ArchiveModelXCTest : XCTestCase
 @end
@@ -26,14 +43,15 @@
     [CAArchivePreferences registerDefaultsInUserDefaults:defaults];
 
     preferences = [[CAArchivePreferences alloc] initWithUserDefaults:defaults];
-    [preferences setArchiveTypeTitle:@"zip"];
+    [preferences setArchiveTypeIdentifier:CAArchiveTypeIdentifierZIP];
     [preferences setCompressionLevel:9];
     [preferences setEncoding:@"CP932"];
     [preferences setArchiveIndividually:YES];
     [preferences save];
 
     preferences = [[CAArchivePreferences alloc] initWithUserDefaults:defaults];
-    XCTAssertEqualObjects([preferences archiveTypeTitle], @"zip");
+    XCTAssertEqualObjects([preferences archiveTypeIdentifier],
+	CAArchiveTypeIdentifierZIP);
     XCTAssertEqual([preferences compressionLevel], 9);
     XCTAssertEqualObjects([preferences encoding], @"CP932");
     XCTAssertTrue([preferences archiveIndividually]);
@@ -49,6 +67,64 @@
 	[NSArray arrayWithObject:@"/tmp/Sample Folder"]
 	archiveType:ZIPT
 	sourceIsDirectory:YES], @"/tmp/Sample Folder.zip");
+    XCTAssertEqualObjects(CAArchiveTypeIdentifierForMenuIndex(DMGT),
+	CAArchiveTypeIdentifierDMG);
+    XCTAssertEqual(CAArchiveTypeMenuIndexForIdentifier(@"unknown"), GZIPT);
+}
+
+- (void)testArchiveCommandBuilder
+{
+    CAArchiveCommandSpec *spec;
+    NSArray *expectedArguments;
+
+    spec = [CAArchiveCommandBuilder compressionCommandSpecWithCommand:@"gzip"
+	sourceArguments:[NSArray arrayWithObject:@"readme.txt"]
+	firstSourceIsDirectory:NO
+	compressionLevel:1
+	discardResourceForks:YES
+	excludeDSStore:YES
+	excludeMacFiles:NO
+	explicitExcludedFiles:nil];
+    expectedArguments = [NSArray arrayWithObjects:@"-c", @"readme.txt", nil];
+    XCTAssertEqualObjects([spec command], @"gzip");
+    XCTAssertEqualObjects([spec arguments], expectedArguments);
+    XCTAssertEqualObjects([[spec environment] objectForKey:@"GZIP"], @"-1");
+
+    spec = [CAArchiveCommandBuilder zipCommandSpecWithSourceArguments:
+	[NSArray arrayWithObject:@"Sample Folder"]
+	firstSourceIsDirectory:YES
+	outputArgument:@"Sample Folder.zip"
+	encoding:@"CP932"
+	compressionLevel:9
+	password:@"secret"
+	discardResourceForks:YES
+	excludeDSStore:YES
+	excludeMacFiles:NO
+	explicitExcludedFiles:[NSArray arrayWithObject:@"skip.txt"]];
+    XCTAssertEqualObjects([spec command], @"zip");
+    XCTAssertTrue([[spec arguments] containsObject:@"-r"]);
+    XCTAssertTrue([[spec arguments] containsObject:@"-df"]);
+    XCTAssertTrue([[spec arguments] containsObject:@"*/skip.txt"]);
+}
+
+- (void)testDMGFailureReason
+{
+    CAFailingCommandRunner *runner;
+    NSString *errorMessage;
+    BOOL ok;
+
+    runner = [[CAFailingCommandRunner alloc] init];
+    errorMessage = nil;
+    ok = [CADMGArchiver createDMGFromSource:@"/tmp/source"
+	output:@"/tmp/output.dmg"
+	password:nil
+	internetEnabled:NO
+	excludedFiles:nil
+	commandRunner:runner
+	errorMessage:&errorMessage];
+
+    XCTAssertFalse(ok);
+    XCTAssertEqualObjects(errorMessage, @"Could not create temporary disk image.");
 }
 
 - (void)testJobAndQueue

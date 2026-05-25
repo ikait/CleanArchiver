@@ -20,6 +20,7 @@ modified Info-ZIP `zip` executable.
 ## Requirements
 
 * Apple silicon Mac
+* macOS 11 or later
 * Xcode
 
 ## Build and Test

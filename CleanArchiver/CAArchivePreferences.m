@@ -22,7 +22,7 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     NSMutableDictionary *defaults;
 
     defaults = [NSMutableDictionary dictionary];
-    [defaults setObject:@"gzip" forKey:AOArchiveType];
+    [defaults setObject:CAArchiveTypeIdentifierGZIP forKey:AOArchiveType];
     [defaults setObject:[NSNumber numberWithInt:-1] forKey:AOCompressionLevel];
     [defaults setObject:@"" forKey:AOEncoding];
     [defaults setObject:[NSNumber numberWithBool:YES] forKey:AODiscardRsrc];
@@ -41,7 +41,9 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
 {
     if (self = [super init]) {
 	_userDefaults = userDefaults;
-	_archiveTypeTitle = [[_userDefaults objectForKey:AOArchiveType] copy];
+	_archiveTypeIdentifier = [CAArchiveTypeIdentifierForMenuIndex(
+	    CAArchiveTypeMenuIndexForIdentifier(
+		[_userDefaults objectForKey:AOArchiveType])) copy];
 	_compressionLevel = (int)[_userDefaults integerForKey:AOCompressionLevel];
 	_encoding = [[_userDefaults objectForKey:AOEncoding] copy];
 	_discardResourceForks = [_userDefaults boolForKey:AODiscardRsrc];
@@ -55,7 +57,7 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
 
 - (void)save
 {
-    [_userDefaults setObject:_archiveTypeTitle forKey:AOArchiveType];
+    [_userDefaults setObject:_archiveTypeIdentifier forKey:AOArchiveType];
     [_userDefaults setInteger:_compressionLevel forKey:AOCompressionLevel];
     [_userDefaults setObject:_encoding forKey:AOEncoding];
     [_userDefaults setBool:_discardResourceForks forKey:AODiscardRsrc];
@@ -65,8 +67,12 @@ NSString *AOReplaceAutomatically= @"Replace Automatically";
     [_userDefaults setBool:_internetEnabledDMG forKey:AOInternetEnabledDMG];
 }
 
-- (NSString *)archiveTypeTitle { return _archiveTypeTitle; }
-- (void)setArchiveTypeTitle:(NSString *)archiveTypeTitle { _archiveTypeTitle = [archiveTypeTitle copy]; }
+- (NSString *)archiveTypeIdentifier { return _archiveTypeIdentifier; }
+- (void)setArchiveTypeIdentifier:(NSString *)archiveTypeIdentifier
+{
+    _archiveTypeIdentifier = [CAArchiveTypeIdentifierForMenuIndex(
+	CAArchiveTypeMenuIndexForIdentifier(archiveTypeIdentifier)) copy];
+}
 - (int)compressionLevel { return _compressionLevel; }
 - (void)setCompressionLevel:(int)compressionLevel { _compressionLevel = compressionLevel; }
 - (NSString *)encoding { return _encoding; }

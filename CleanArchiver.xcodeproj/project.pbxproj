@@ -52,6 +52,11 @@
 		B560001823520002006B2FAB /* CAArchivePreferences.m in Sources */ = {isa = PBXBuildFile; fileRef = B560002723520002006B2FAB /* CAArchivePreferences.m */; };
 		B560001923520002006B2FAB /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B560002A23520002006B2FAB /* XCTest.framework */; };
 		B560001A23520002006B2FAB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		B560006023520003006B2FAB /* CAArchiveTypes.m in Sources */ = {isa = PBXBuildFile; fileRef = B560006123520003006B2FAB /* CAArchiveTypes.m */; };
+		B560006223520003006B2FAB /* CAArchiveCommandBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = B560006323520003006B2FAB /* CAArchiveCommandBuilder.m */; };
+		B560006423520003006B2FAB /* CAArchiveTypes.m in Sources */ = {isa = PBXBuildFile; fileRef = B560006123520003006B2FAB /* CAArchiveTypes.m */; };
+		B560006523520003006B2FAB /* CAArchiveCommandBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = B560006323520003006B2FAB /* CAArchiveCommandBuilder.m */; };
+		B560006623520003006B2FAB /* CADMGArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = B560000523520001006B2FAB /* CADMGArchiver.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +112,10 @@
 		B560002823520002006B2FAB /* ArchiveModelXCTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ArchiveModelXCTest.m; path = Tests/ArchiveModelXCTest.m; sourceTree = "<group>"; };
 		B560002923520002006B2FAB /* CleanArchiverTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CleanArchiverTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B560002A23520002006B2FAB /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = /Applications/Xcode.app/Contents/Developer/Library/Frameworks/XCTest.framework; sourceTree = "<absolute>"; };
+		B560006123520003006B2FAB /* CAArchiveTypes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchiveTypes.m; path = CleanArchiver/CAArchiveTypes.m; sourceTree = "<group>"; };
+		B560006323520003006B2FAB /* CAArchiveCommandBuilder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CAArchiveCommandBuilder.m; path = CleanArchiver/CAArchiveCommandBuilder.m; sourceTree = "<group>"; };
+		B560006723520003006B2FAB /* CAArchiveTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchiveTypes.h; path = CleanArchiver/CAArchiveTypes.h; sourceTree = "<group>"; };
+		B560006823520003006B2FAB /* CAArchiveCommandBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAArchiveCommandBuilder.h; path = CleanArchiver/CAArchiveCommandBuilder.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,12 +144,16 @@
 			children = (
 				B560002023520002006B2FAB /* CAArchiveJob.h */,
 				B560002123520002006B2FAB /* CAArchiveJob.m */,
+				B560006823520003006B2FAB /* CAArchiveCommandBuilder.h */,
+				B560006323520003006B2FAB /* CAArchiveCommandBuilder.m */,
 				B560002423520002006B2FAB /* CAArchiveNameBuilder.h */,
 				B560002523520002006B2FAB /* CAArchiveNameBuilder.m */,
 				B560002623520002006B2FAB /* CAArchivePreferences.h */,
 				B560002723520002006B2FAB /* CAArchivePreferences.m */,
 				B560002223520002006B2FAB /* CAArchiveQueue.h */,
 				B560002323520002006B2FAB /* CAArchiveQueue.m */,
+				B560006723520003006B2FAB /* CAArchiveTypes.h */,
+				B560006123520003006B2FAB /* CAArchiveTypes.m */,
 				B536BA63109C2D7F003C7479 /* CAController.h */,
 				B536BA64109C2D7F003C7479 /* CAController.m */,
 				B536BA65109C2D7F003C7479 /* CAView.h */,
@@ -363,6 +376,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B536BA51109C2D1C003C7479 /* main.m in Sources */,
+				B560006023520003006B2FAB /* CAArchiveTypes.m in Sources */,
+				B560006223520003006B2FAB /* CAArchiveCommandBuilder.m in Sources */,
 				B560001023520002006B2FAB /* CAArchiveJob.m in Sources */,
 				B560001123520002006B2FAB /* CAArchiveQueue.m in Sources */,
 				B560001223520002006B2FAB /* CAArchiveNameBuilder.m in Sources */,
@@ -380,6 +395,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				B560001423520002006B2FAB /* ArchiveModelXCTest.m in Sources */,
+				B560006423520003006B2FAB /* CAArchiveTypes.m in Sources */,
+				B560006523520003006B2FAB /* CAArchiveCommandBuilder.m in Sources */,
+				B560006623520003006B2FAB /* CADMGArchiver.m in Sources */,
 				B560001523520002006B2FAB /* CAArchiveJob.m in Sources */,
 				B560001623520002006B2FAB /* CAArchiveQueue.m in Sources */,
 				B560001723520002006B2FAB /* CAArchiveNameBuilder.m in Sources */,

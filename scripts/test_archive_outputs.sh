@@ -24,6 +24,7 @@ trap 'hdiutil detach "$ROOT/Volume" >/dev/null 2>&1 || true; rm -rf "$ROOT"' EXI
   -I CleanArchiver \
   Tests/CarcArchiveTest.m \
   CleanArchiver/CACommandLocator.m \
+  CleanArchiver/CAArchiveCommandBuilder.m \
   CleanArchiver/CADMGArchiver.m \
   CleanArchiver/Carc.m \
   -o "$HARNESS"
@@ -34,6 +35,8 @@ trap 'hdiutil detach "$ROOT/Volume" >/dev/null 2>&1 || true; rm -rf "$ROOT"' EXI
   -framework Cocoa \
   -I CleanArchiver \
   Tests/ControllerModelTest.m \
+  CleanArchiver/CAArchiveTypes.m \
+  CleanArchiver/CAArchiveCommandBuilder.m \
   CleanArchiver/CAArchiveJob.m \
   CleanArchiver/CAArchiveQueue.m \
   CleanArchiver/CAArchiveNameBuilder.m \

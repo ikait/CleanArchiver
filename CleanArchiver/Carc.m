@@ -27,18 +27,12 @@
 //
 
 #import "Carc.h"
+#import "CAArchiveCommandBuilder.h"
 #import "CACommandLocator.h"
 #import "CADMGArchiver.h"
 
 @interface Carc () <CACommandRunning>
 @end
-
-static void
-CAAddUniqueObject(NSMutableArray *array, id object)
-{
-    if (object != nil && ![array containsObject:object])
-	[array addObject:object];
-}
 
 @implementation Carc
 
@@ -195,34 +189,6 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     return nil;
 }
 
-- (NSMutableArray *)excludedFilePatternsDiscardingResources:(BOOL *)discardResources
-{
-    NSMutableArray *patterns;
-    unsigned i;
-
-    patterns = [NSMutableArray array];
-    for (i = 0; i < [_excludedFiles count]; i++)
-	CAAddUniqueObject(patterns, [_excludedFiles objectAtIndex:i]);
-
-    if (_excludeDSS)
-	CAAddUniqueObject(patterns, @".DS_Store");
-
-    if (_excludeMacFiles) {
-	*discardResources = YES;
-	CAAddUniqueObject(patterns, @"._*");
-	CAAddUniqueObject(patterns, @".DS_Store");
-	CAAddUniqueObject(patterns, @"icon\r");
-    }
-
-    if ([patterns containsObject:@"._*"])
-	*discardResources = YES;
-
-    if (*discardResources)
-	CAAddUniqueObject(patterns, @"._*");
-
-    return patterns;
-}
-
 - (BOOL)configureTaskWithCommand:(NSString *)command
 		       arguments:(NSArray *)arguments
 		     environment:(NSDictionary *)extraEnvironment
@@ -256,62 +222,29 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (BOOL)configureCompressionTaskWithCommand:(NSString *)compress
 {
     NSArray *srcs;
-    NSMutableArray *args;
-    NSMutableDictionary *environment;
-    NSMutableArray *excludedFiles;
-    BOOL discardResources;
-    BOOL useTar;
+    CAArchiveCommandSpec *spec;
     id standardOutput;
-    unsigned i;
 
     srcs = [self inputArguments];
     if ([srcs count] == 0)
 	return NO;
 
-    discardResources = _discardRsrc;
-    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
-    useTar = [srcs count] > 1 || [self inputIsDirectory:[srcs objectAtIndex:0]]
-	|| !discardResources;
-
-    environment = [NSMutableDictionary dictionary];
-    if (_compressionLevel != -1) {
-	if ([compress isEqualToString:@"bzip2"])
-	    [environment setObject:[NSString stringWithFormat:@"-%d", _compressionLevel]
-		forKey:@"BZIP2"];
-	else if ([compress isEqualToString:@"gzip"])
-	    [environment setObject:[NSString stringWithFormat:@"-%d", _compressionLevel]
-		forKey:@"GZIP"];
-    }
-
-    if (discardResources) {
-	[environment setObject:@"1" forKey:@"COPYFILE_DISABLE"];
-	[environment setObject:@"1" forKey:@"COPY_EXTENDED_ATTRIBUTES_DISABLE"];
-    }
-
     standardOutput = [self standardOutputForArchiveData];
     if (standardOutput == nil)
 	return NO;
 
-    if (useTar) {
-	args = [NSMutableArray arrayWithObjects:@"-cf", @"-",
-	    @"--use-compress-program", compress, nil];
-	for (i = 0; i < [excludedFiles count]; i++) {
-	    [args addObject:@"--exclude"];
-	    [args addObject:[excludedFiles objectAtIndex:i]];
-	}
-	[args addObjectsFromArray:srcs];
+    spec = [CAArchiveCommandBuilder compressionCommandSpecWithCommand:compress
+	sourceArguments:srcs
+	firstSourceIsDirectory:[self inputIsDirectory:[srcs objectAtIndex:0]]
+	compressionLevel:_compressionLevel
+	discardResourceForks:_discardRsrc
+	excludeDSStore:_excludeDSS
+	excludeMacFiles:_excludeMacFiles
+	explicitExcludedFiles:_excludedFiles];
 
-	return [self configureTaskWithCommand:@"tar"
-	    arguments:args
-	    environment:environment
-	    standardInput:[self standardInputObject]
-	    standardOutput:standardOutput];
-    }
-
-    args = [NSMutableArray arrayWithObjects:@"-c", [srcs objectAtIndex:0], nil];
-    return [self configureTaskWithCommand:compress
-	arguments:args
-	environment:environment
+    return [self configureTaskWithCommand:[spec command]
+	arguments:[spec arguments]
+	environment:[spec environment]
 	standardInput:[self standardInputObject]
 	standardOutput:standardOutput];
 }
@@ -412,7 +345,7 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 {
     NSArray *srcs;
     NSString *src;
-    NSMutableArray *excludedFiles;
+    NSArray *excludedFiles;
     BOOL discardResources;
     NSString *errorMessage;
     int status;
@@ -424,7 +357,11 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     src = [srcs objectAtIndex:0];
     errorMessage = nil;
     discardResources = _discardRsrc;
-    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
+    excludedFiles = [CAArchiveCommandBuilder
+	excludedFilePatternsWithExplicitExcludedFiles:_excludedFiles
+	excludeDSStore:_excludeDSS
+	excludeMacFiles:_excludeMacFiles
+	discardResourceForks:&discardResources];
     if ([CADMGArchiver createDMGFromSource:src
 	output:_output
 	password:_archivePassword
@@ -451,37 +388,13 @@ CAAddUniqueObject(NSMutableArray *array, id object)
 - (BOOL)configureZipTask
 {
     NSArray *srcs;
-    NSMutableArray *args;
-    NSMutableArray *excludedFiles;
-    BOOL discardResources;
+    CAArchiveCommandSpec *spec;
     NSString *dst;
     id standardOutput;
-    unsigned i;
 
     srcs = [self inputArguments];
     if ([srcs count] == 0)
 	return NO;
-
-    discardResources = _discardRsrc;
-    excludedFiles = [self excludedFilePatternsDiscardingResources:&discardResources];
-
-    args = [NSMutableArray arrayWithObject:@"-q"];
-    if ([srcs count] > 1 || [self inputIsDirectory:[srcs objectAtIndex:0]])
-	[args addObject:@"-r"];
-    if ([_encoding length] > 0) {
-	[args addObject:@"-CF"];
-	[args addObject:@"UTF-8-MAC"];
-	[args addObject:@"-CT"];
-	[args addObject:_encoding];
-    }
-    if (_compressionLevel != -1)
-	[args addObject:[NSString stringWithFormat:@"-%d", _compressionLevel]];
-    if ([_archivePassword length] > 0) {
-	[args addObject:@"-P"];
-	[args addObject:_archivePassword];
-    }
-    if (discardResources)
-	[args addObject:@"-df"];
 
     dst = [self outputArgumentWithStandardOutput:&standardOutput];
     if (dst == nil)
@@ -489,18 +402,20 @@ CAAddUniqueObject(NSMutableArray *array, id object)
     if ([_output isKindOfClass:[NSString class]])
 	[[NSFileManager defaultManager] removeItemAtPath:_output error:nil];
 
-    [args addObject:dst];
-    [args addObjectsFromArray:srcs];
+    spec = [CAArchiveCommandBuilder zipCommandSpecWithSourceArguments:srcs
+	firstSourceIsDirectory:[self inputIsDirectory:[srcs objectAtIndex:0]]
+	outputArgument:dst
+	encoding:_encoding
+	compressionLevel:_compressionLevel
+	password:_archivePassword
+	discardResourceForks:_discardRsrc
+	excludeDSStore:_excludeDSS
+	excludeMacFiles:_excludeMacFiles
+	explicitExcludedFiles:_excludedFiles];
 
-    for (i = 0; i < [excludedFiles count]; i++) {
-	[args addObject:@"-x"];
-	[args addObject:[NSString stringWithFormat:@"*/%@",
-	    [excludedFiles objectAtIndex:i]]];
-    }
-
-    return [self configureTaskWithCommand:@"zip"
-	arguments:args
-	environment:nil
+    return [self configureTaskWithCommand:[spec command]
+	arguments:[spec arguments]
+	environment:[spec environment]
 	standardInput:[self standardInputObject]
 	standardOutput:standardOutput];
 }

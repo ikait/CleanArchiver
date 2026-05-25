@@ -65,8 +65,8 @@ CARunAlert(NSString *message)
     preferences = [[CAArchivePreferences alloc] initWithUserDefaults:
 	[NSUserDefaults standardUserDefaults]];
 
-    [_archiveTypeMenu selectItemWithTitle:
-	[preferences archiveTypeTitle]];
+    [_archiveTypeMenu selectItemAtIndex:
+	CAArchiveTypeMenuIndexForIdentifier([preferences archiveTypeIdentifier])];
     switch ([preferences compressionLevel]) {
     case 1:
 	[_compressionLevelMenu selectItemAtIndex:FAST];
@@ -255,7 +255,9 @@ CARunAlert(NSString *message)
 
     preferences = [[CAArchivePreferences alloc] initWithUserDefaults:
 	[NSUserDefaults standardUserDefaults]];
-    [preferences setArchiveTypeTitle:[_archiveTypeMenu titleOfSelectedItem]];
+    [preferences setArchiveTypeIdentifier:
+	CAArchiveTypeIdentifierForMenuIndex(
+	    (enum archiveTypeMenuIndex)[_archiveTypeMenu indexOfSelectedItem])];
     [preferences setCompressionLevel:level];
     [preferences setEncoding:[_encodingCBox stringValue]];
     [preferences setDiscardResourceForks:[_discardRsrcCheck state]];

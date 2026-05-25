@@ -4,7 +4,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "CAController.h"
+#import "CAArchiveTypes.h"
 
 @interface CAArchiveNameBuilder : NSObject
 
